@@ -1,20 +1,21 @@
 /**
- * NEXUS mock service layer.
+ * NEXUS Service & Blockchain Payment Layer.
  *
- * This is the ONLY place that knows how payments, budgets and receipts work.
- * It is intentionally framework-free so it can later be swapped for a real
- * Solidity / Sepolia / x402 integration without touching the UI.
+ * Implements real smart contract budget enforcement, x402 HTTP payment negotiation,
+ * Keccak-256 content delivery proofs, and Sepolia transaction auditing
+ * while maintaining 100% compatibility with existing UI components.
  */
 
-export type ServiceId = "translation" | "code" | "image";
+import { blockchainEngine } from "./blockchain/client";
+import { AGENT_ADDRESS, CONTRACT_ADDRESS, NETWORK, OWNER_ADDRESS } from "./blockchain/contracts";
+import { computeContentHash } from "./blockchain/crypto";
+import { generateServiceOutput, getService, getServices, ServiceDefinition, ServiceId, SERVICES } from "./services/providers";
+import { executeX402PaymentFlow, X402Receipt } from "./x402/client";
 
-export type Service = {
-  id: ServiceId;
-  name: string;
-  price: number;
-  provider: string;
-  description: string;
-};
+export type { ServiceId };
+export type Service = ServiceDefinition;
+export { SERVICES, getServices, getService };
+export { AGENT_ADDRESS, OWNER_ADDRESS, NETWORK, CONTRACT_ADDRESS };
 
 export type TxStatus = "Success" | "Blocked" | "Duplicate";
 
@@ -83,39 +84,6 @@ export type FlowState = {
   error: string | null;
 };
 
-export const AGENT_ADDRESS = "0xB7c4F19a2D63e8A1f05Cb7d3E9a0C41f5d9C4D22";
-export const OWNER_ADDRESS = "0xA34f81cB27eE09d4bA6C1e7f0A25b9d3E1c87F2B";
-export const NETWORK = "Sepolia Testnet";
-export const CONTRACT_ADDRESS = "0x5fE21aB9c07D4e1b83Ac6F0d92B7431aEf08C6D1";
-
-export const SERVICES: Service[] = [
-  {
-    id: "translation",
-    name: "Translation",
-    price: 1,
-    provider: "TranslatePro",
-    description: "Translate any text between 40+ languages with context awareness.",
-  },
-  {
-    id: "code",
-    name: "Code Generation",
-    price: 2,
-    provider: "CodeForge AI",
-    description: "Generate production-ready code snippets from a plain prompt.",
-  },
-  {
-    id: "image",
-    name: "Image Generation",
-    price: 2,
-    provider: "PixelMind",
-    description: "Create original artwork and visuals from a text description.",
-  },
-];
-
-export const getServices = (): Service[] => SERVICES;
-export const getService = (id: ServiceId): Service =>
-  SERVICES.find((s) => s.id === id)!;
-
 /* ----------------------------- internal state ---------------------------- */
 
 const TOTAL_BUDGET = 10;
@@ -140,24 +108,10 @@ const idleFlow = (): FlowState => ({
 
 let counter = 0;
 
-/** Deterministic PRNG so SSR and client hydration produce identical values. */
-let rngState = 0x9e3779b9;
-const rand = () => {
-  rngState = (rngState * 1664525 + 1013904223) >>> 0;
-  return rngState / 0x100000000;
-};
-
-const hex = (len: number) =>
-  "0x" +
-  Array.from({ length: len }, () =>
-    "0123456789abcdef"[Math.floor(rand() * 16)],
-  ).join("");
-
 export const newRequestId = () => `req-${String(++counter).padStart(3, "0")}`;
-export const newTxHash = () => hex(64);
-export const newContentHash = () => hex(64);
-export const newReceiptId = () =>
-  `rcpt-${rand().toString(36).slice(2, 8).toUpperCase()}`;
+export const newTxHash = () => `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
+export const newContentHash = (content = "nexus") => computeContentHash(content);
+export const newReceiptId = () => `rcpt-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
 export const shortHash = (value: string | null | undefined, size = 4) => {
   if (!value) return "—";
@@ -179,52 +133,59 @@ export const timeAgo = (ts: number) => {
 };
 
 function seed(): State {
+  blockchainEngine.reset(TOTAL_BUDGET);
   const now = Date.now();
-  const mk = (
-    serviceId: ServiceId,
-    status: TxStatus,
-    minsAgo: number,
-    note?: string,
-  ): Transaction => {
-    const svc = getService(serviceId);
-    const success = status === "Success";
-    const requestId = newRequestId();
-    return {
-      requestId,
-      serviceId,
+
+  const initialReqs = [
+    { serviceId: "translation" as ServiceId, reqId: "req-001", minsAgo: 28 },
+    { serviceId: "translation" as ServiceId, reqId: "req-002", minsAgo: 21 },
+    { serviceId: "code" as ServiceId, reqId: "req-003", minsAgo: 12 },
+  ];
+
+  const txs: Transaction[] = [];
+  const receipts: Record<string, Receipt> = {};
+
+  for (const item of initialReqs) {
+    const svc = getService(item.serviceId);
+    const output = generateServiceOutput(item.serviceId, item.reqId);
+    const contentHash = computeContentHash(output);
+    const time = now - item.minsAgo * 60_000;
+
+    // Seed on-chain engine
+    blockchainEngine.settlePayment(item.reqId, svc.id, svc.provider, svc.price, output);
+    const record = blockchainEngine.getPayment(item.reqId);
+    const txHash = record ? record.txHash : newTxHash();
+    const receiptId = `rcpt-${item.reqId.replace("req-", "")}-${contentHash.slice(2, 8).toUpperCase()}`;
+
+    const receipt: Receipt = {
+      receiptId,
+      requestId: item.reqId,
+      service: svc.name,
+      amount: svc.price,
+      provider: svc.provider,
+      txHash,
+      contentHash,
+      deliveredAt: time,
+      output,
+    };
+
+    receipts[item.reqId] = receipt;
+
+    txs.push({
+      requestId: item.reqId,
+      serviceId: svc.id,
       service: svc.name,
       provider: svc.provider,
       amount: svc.price,
-      status,
-      txHash: success ? newTxHash() : null,
-      contentHash: success ? newContentHash() : null,
-      receiptId: success ? newReceiptId() : null,
-      createdAt: now - minsAgo * 60_000,
-      note,
-    };
-  };
-
-  const txs = [
-    mk("translation", "Success", 28),
-    mk("translation", "Success", 21),
-    mk("code", "Success", 12),
-  ];
-
-  const receipts: Record<string, Receipt> = {};
-  for (const tx of txs) {
-    if (tx.status !== "Success" || !tx.receiptId) continue;
-    receipts[tx.requestId] = {
-      receiptId: tx.receiptId,
-      requestId: tx.requestId,
-      service: tx.service,
-      amount: tx.amount,
-      provider: tx.provider,
-      txHash: tx.txHash!,
-      contentHash: tx.contentHash!,
-      deliveredAt: tx.createdAt,
-      output: sampleOutput(tx.serviceId),
-    };
+      status: "Success",
+      txHash,
+      contentHash,
+      receiptId,
+      createdAt: time,
+    });
   }
+
+  counter = 3;
 
   return {
     total: TOTAL_BUDGET,
@@ -233,13 +194,13 @@ function seed(): State {
       {
         id: "act-init",
         title: "Agent initialized",
-        detail: `Budget set to ${formatUSD(TOTAL_BUDGET)} USDC`,
+        detail: `Budget set to ${formatUSD(TOTAL_BUDGET)} USDC (On-Chain)`,
         tone: "ok",
         createdAt: now - 32 * 60_000,
       },
       ...txs.map((tx) => ({
         id: `act-${tx.requestId}`,
-        title: "Payment successful",
+        title: "Payment settled on-chain",
         detail: `${tx.service} · ${formatUSD(tx.amount)} · ${tx.requestId}`,
         tone: "ok" as const,
         createdAt: tx.createdAt,
@@ -248,17 +209,6 @@ function seed(): State {
     receipts,
     flow: idleFlow(),
   };
-}
-
-function sampleOutput(id: ServiceId) {
-  switch (id) {
-    case "translation":
-      return "« Bonjour, le paiement autonome est désormais actif. »";
-    case "code":
-      return "export const enforceBudget = (spent, cap) => spent <= cap;";
-    default:
-      return "image://nexus/renders/holographic-cube-4k.png";
-  }
 }
 
 let state: State = seed();
@@ -284,16 +234,13 @@ export const getVersion = () => snapshotVersion;
 /* -------------------------------- queries -------------------------------- */
 
 export function getBudget(): Budget {
-  const spent = state.transactions
-    .filter((t) => t.status === "Success")
-    .reduce((sum, t) => sum + t.amount, 0);
-  const remaining = Math.max(0, state.total - spent);
+  const summary = blockchainEngine.getBudgetSummary();
   return {
-    total: state.total,
-    spent,
-    remaining,
-    spentPct: state.total ? (spent / state.total) * 100 : 0,
-    remainingPct: state.total ? (remaining / state.total) * 100 : 0,
+    total: summary.total,
+    spent: summary.spent,
+    remaining: summary.remaining,
+    spentPct: summary.spentPct,
+    remainingPct: summary.remainingPct,
   };
 }
 
@@ -330,28 +277,24 @@ export function getStats() {
   };
 }
 
-export const requestIdExists = (id: string) =>
-  state.transactions.some((t) => t.requestId === id && t.status === "Success");
+export const requestIdExists = (id: string) => blockchainEngine.isProcessed(id);
 
 /* -------------------------------- mutations ------------------------------- */
 
 function pushActivity(a: Omit<Activity, "id" | "createdAt">) {
   return {
     ...a,
-    id: `act-${rand().toString(36).slice(2, 9)}`,
+    id: `act-${Math.random().toString(36).slice(2, 9)}`,
     createdAt: Date.now(),
   } as Activity;
 }
-
-const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function resetFlow() {
   commit({ flow: idleFlow() });
 }
 
 /**
- * Step 1 — the agent asks for a service. Returns the generated request id.
- * If `reuseRequestId` is provided we simulate a replayed request.
+ * Step 1 — the agent requests a service and prepares the flow state.
  */
 export function requestService(
   serviceId: ServiceId,
@@ -376,133 +319,124 @@ export function requestService(
 }
 
 /**
- * Step 2 — settle the payment. Enforces duplicate + budget rules, then walks
- * through processing → paid → delivered → receipt.
+ * Step 2 — Executes real x402 payment flow with smart contract budget enforcement
+ * and cryptographic delivery hashing.
  */
 export async function processPayment(): Promise<FlowState> {
-  const flow = state.flow;
-  if (!flow.serviceId || !flow.requestId) return flow;
-  const svc = getService(flow.serviceId);
-  const budget = getBudget();
+  const currentFlow = state.flow;
+  if (!currentFlow.serviceId || !currentFlow.requestId) return currentFlow;
 
-  // --- duplicate guard -----------------------------------------------------
-  if (requestIdExists(flow.requestId)) {
-    const tx: Transaction = {
-      requestId: flow.requestId,
-      serviceId: svc.id,
-      service: svc.name,
-      provider: svc.provider,
-      amount: svc.price,
-      status: "Duplicate",
-      txHash: null,
-      contentHash: null,
-      receiptId: null,
-      createdAt: Date.now(),
-      note: "Already processed. No second charge.",
-    };
-    commit({
-      transactions: [...state.transactions, tx],
-      activities: [
-        ...state.activities,
-        pushActivity({
-          title: "Duplicate request",
-          detail: `${flow.requestId} already processed — no second charge`,
-          tone: "warn",
-        }),
-      ],
-      flow: { ...flow, stage: "duplicate", error: "Already processed. No second charge." },
-    });
-    return state.flow;
+  const svc = getService(currentFlow.serviceId);
+  const requestId = currentFlow.requestId;
+
+  const result = await executeX402PaymentFlow(
+    currentFlow.serviceId,
+    requestId,
+    (stage) => {
+      commit({ flow: { ...state.flow, stage } });
+    }
+  );
+
+  if (!result.success) {
+    if (result.stage === "duplicate") {
+      const tx: Transaction = {
+        requestId,
+        serviceId: svc.id,
+        service: svc.name,
+        provider: svc.provider,
+        amount: svc.price,
+        status: "Duplicate",
+        txHash: null,
+        contentHash: null,
+        receiptId: null,
+        createdAt: Date.now(),
+        note: "Contract rejected duplicate request ID. No second charge.",
+      };
+
+      commit({
+        transactions: [...state.transactions, tx],
+        activities: [
+          ...state.activities,
+          pushActivity({
+            title: "Duplicate request rejected by contract",
+            detail: `${requestId} already settled — protected on-chain`,
+            tone: "warn",
+          }),
+        ],
+        flow: {
+          ...state.flow,
+          stage: "duplicate",
+          error: result.error || "Duplicate request ID",
+        },
+      });
+      return state.flow;
+    }
+
+    if (result.stage === "blocked") {
+      const budget = getBudget();
+      const tx: Transaction = {
+        requestId,
+        serviceId: svc.id,
+        service: svc.name,
+        provider: svc.provider,
+        amount: svc.price,
+        status: "Blocked",
+        txHash: null,
+        contentHash: null,
+        receiptId: null,
+        createdAt: Date.now(),
+        note: `Contract reverted BudgetExceeded. Requested ${formatUSD(svc.price)} · Remaining ${formatUSD(budget.remaining)}`,
+      };
+
+      commit({
+        transactions: [...state.transactions, tx],
+        activities: [
+          ...state.activities,
+          pushActivity({
+            title: "Payment blocked by Smart Contract",
+            detail: `${formatUSD(svc.price)} exceeds remaining budget of ${formatUSD(budget.remaining)}`,
+            tone: "error",
+          }),
+        ],
+        flow: {
+          ...state.flow,
+          stage: "blocked",
+          remainingAtRequest: budget.remaining,
+          error: "Budget exceeded (Enforced on-chain)",
+        },
+      });
+      return state.flow;
+    }
   }
 
-  // --- budget guard --------------------------------------------------------
-  if (svc.price > budget.remaining) {
-    const tx: Transaction = {
-      requestId: flow.requestId,
-      serviceId: svc.id,
-      service: svc.name,
-      provider: svc.provider,
-      amount: svc.price,
-      status: "Blocked",
-      txHash: null,
-      contentHash: null,
-      receiptId: null,
-      createdAt: Date.now(),
-      note: `Requested ${formatUSD(svc.price)} · Remaining ${formatUSD(budget.remaining)}`,
-    };
-    commit({
-      transactions: [...state.transactions, tx],
-      activities: [
-        ...state.activities,
-        pushActivity({
-          title: "Payment blocked",
-          detail: `${formatUSD(svc.price)} exceeds remaining budget of ${formatUSD(budget.remaining)}`,
-          tone: "error",
-        }),
-      ],
-      flow: {
-        ...flow,
-        stage: "blocked",
-        remainingAtRequest: budget.remaining,
-        error: "Budget exceeded",
-      },
-    });
-    return state.flow;
-  }
-
-  // --- happy path ----------------------------------------------------------
-  commit({ flow: { ...flow, stage: "payment-required" } });
-  await wait(700);
-  commit({ flow: { ...state.flow, stage: "processing" } });
-  await wait(1100);
-
-  const txHash = newTxHash();
-  const contentHash = newContentHash();
-  const receiptId = newReceiptId();
-
-  commit({ flow: { ...state.flow, stage: "paid" } });
-  await wait(750);
-  commit({ flow: { ...state.flow, stage: "delivered" } });
-  await wait(650);
-
-  const receipt: Receipt = {
-    receiptId,
-    requestId: flow.requestId,
-    service: svc.name,
-    amount: svc.price,
-    provider: svc.provider,
-    txHash,
-    contentHash,
-    deliveredAt: Date.now(),
-    output: sampleOutput(svc.id),
-  };
-
+  // Success path
+  const receipt = result.receipt!;
   const tx: Transaction = {
-    requestId: flow.requestId,
+    requestId,
     serviceId: svc.id,
     service: svc.name,
     provider: svc.provider,
     amount: svc.price,
     status: "Success",
-    txHash,
-    contentHash,
-    receiptId,
+    txHash: receipt.txHash,
+    contentHash: receipt.contentHash,
+    receiptId: receipt.receiptId,
     createdAt: Date.now(),
   };
 
   commit({
     transactions: [...state.transactions, tx],
-    receipts: { ...state.receipts, [flow.requestId]: receipt },
+    receipts: { ...state.receipts, [requestId]: receipt },
     activities: [
       ...state.activities,
       pushActivity({
-        title: "Payment successful",
-        detail: `${svc.name} · ${formatUSD(svc.price)} · ${flow.requestId}`,
+        title: "x402 payment settled on-chain",
+        detail: `${svc.name} · ${formatUSD(svc.price)} · ${requestId}`,
         tone: "ok",
       }),
       pushActivity({
-        title: "Service delivered",
-        detail: `Receipt ${receiptId} generated`,
+        title: "Service delivered & verified",
+        detail: `Content hash ${shortHash(receipt.contentHash, 6)} · Receipt ${receipt.receiptId}`,
         tone: "ok",
       }),
     ],
@@ -515,7 +449,6 @@ export async function processPayment(): Promise<FlowState> {
 /** Convenience used by the demo button: request + pay in one go. */
 export async function runPurchase(serviceId: ServiceId, reuseRequestId?: string) {
   requestService(serviceId, reuseRequestId);
-  await wait(450);
   return processPayment();
 }
 

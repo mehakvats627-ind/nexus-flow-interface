@@ -1,0 +1,46 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_20-7cf1efa597d8792d76a7abcd846166bd0b4722f5",
+  "solcVersion": "0.8.20",
+  "solcLongVersion": "0.8.20+commit.a1b79de6",
+  "compilerType": "solc",
+  "userSourceNameMap": {
+    "contracts/NexusBudgetManager.sol": "project/contracts/NexusBudgetManager.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "shanghai",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/NexusBudgetManager.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\n/**\n * @title NexusBudgetManager\n * @dev Enforces hard spending caps, agent authorization, duplicate protection (idempotency),\n *      and cryptographic delivery proofs for autonomous AI agent payments.\n */\ncontract NexusBudgetManager {\n    // --- Custom Errors ---\n    error OnlyOwner();\n    error OnlyAuthorizedAgent();\n    error BudgetExceeded(uint256 requestedAmount, uint256 remainingBudget);\n    error DuplicateRequest(string requestId);\n    error InvalidAmount();\n    error InvalidAddress();\n    error RequestNotFound(string requestId);\n\n    // --- State Variables ---\n    address public owner;\n    address public agent;\n    uint256 public totalBudget;\n    uint256 public totalSpent;\n\n    struct PaymentRecord {\n        string requestId;\n        address agent;\n        uint256 amount;\n        string serviceId;\n        string provider;\n        bytes32 contentHash;\n        uint256 timestamp;\n    }\n\n    // Mapping from requestId to payment record\n    mapping(string => PaymentRecord) private payments;\n    // Mapping from requestId to whether it has been processed\n    mapping(string => bool) public processedRequests;\n    // Array of requestIds in order of settlement for auditability\n    string[] public requestIds;\n\n    // --- Events ---\n    event AgentAuthorized(address indexed previousAgent, address indexed newAgent);\n    event BudgetUpdated(uint256 previousBudget, uint256 newBudget);\n    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);\n    event PaymentSettled(\n        string indexed requestId,\n        address indexed agent,\n        uint256 amount,\n        uint256 totalSpent,\n        bytes32 contentHash,\n        string serviceId,\n        string provider,\n        uint256 timestamp\n    );\n    event PaymentBlocked(string indexed requestId, address indexed agent, uint256 amount, uint256 remainingBudget);\n\n    // --- Modifiers ---\n    modifier onlyOwner() {\n        if (msg.sender != owner) revert OnlyOwner();\n        _;\n    }\n\n    modifier onlyAgentOrOwner() {\n        if (msg.sender != agent && msg.sender != owner) revert OnlyAuthorizedAgent();\n        _;\n    }\n\n    /**\n     * @dev Constructor sets the owner and optionally initial budget and agent.\n     */\n    constructor(uint256 _initialBudget, address _initialAgent) {\n        owner = msg.sender;\n        totalBudget = _initialBudget;\n        if (_initialAgent != address(0)) {\n            agent = _initialAgent;\n            emit AgentAuthorized(address(0), _initialAgent);\n        }\n        if (_initialBudget > 0) {\n            emit BudgetUpdated(0, _initialBudget);\n        }\n    }\n\n    /**\n     * @dev Owner authorizes a new AI agent address.\n     */\n    function authorizeAgent(address _agent) external onlyOwner {\n        if (_agent == address(0)) revert InvalidAddress();\n        address oldAgent = agent;\n        agent = _agent;\n        emit AgentAuthorized(oldAgent, _agent);\n    }\n\n    /**\n     * @dev Owner updates the total budget cap.\n     */\n    function setBudget(uint256 _newBudget) external onlyOwner {\n        uint256 oldBudget = totalBudget;\n        totalBudget = _newBudget;\n        emit BudgetUpdated(oldBudget, _newBudget);\n    }\n\n    /**\n     * @dev Owner transfers contract ownership.\n     */\n    function transferOwnership(address _newOwner) external onlyOwner {\n        if (_newOwner == address(0)) revert InvalidAddress();\n        address oldOwner = owner;\n        owner = _newOwner;\n        emit OwnershipTransferred(oldOwner, _newOwner);\n    }\n\n    /**\n     * @dev Authorized agent settles a payment for a service request.\n     *      Enforces duplicate prevention, hard budget cap, and stores verifiable content hash.\n     */\n    function settlePayment(\n        string calldata requestId,\n        string calldata serviceId,\n        string calldata provider,\n        uint256 amount,\n        bytes32 contentHash\n    ) external onlyAgentOrOwner returns (bool) {\n        if (amount == 0) revert InvalidAmount();\n        if (bytes(requestId).length == 0) revert InvalidAmount();\n        \n        // Check duplicate\n        if (processedRequests[requestId]) {\n            revert DuplicateRequest(requestId);\n        }\n\n        // Check budget\n        uint256 remaining = getRemainingBudget();\n        if (amount > remaining) {\n            emit PaymentBlocked(requestId, msg.sender, amount, remaining);\n            revert BudgetExceeded(amount, remaining);\n        }\n\n        // Settle payment\n        totalSpent += amount;\n        processedRequests[requestId] = true;\n\n        PaymentRecord memory record = PaymentRecord({\n            requestId: requestId,\n            agent: msg.sender,\n            amount: amount,\n            serviceId: serviceId,\n            provider: provider,\n            contentHash: contentHash,\n            timestamp: block.timestamp\n        });\n\n        payments[requestId] = record;\n        requestIds.push(requestId);\n\n        emit PaymentSettled(\n            requestId,\n            msg.sender,\n            amount,\n            totalSpent,\n            contentHash,\n            serviceId,\n            provider,\n            block.timestamp\n        );\n\n        return true;\n    }\n\n    // --- View Functions ---\n\n    /**\n     * @notice Get remaining budget.\n     */\n    function getRemainingBudget() public view returns (uint256) {\n        if (totalSpent >= totalBudget) {\n            return 0;\n        }\n        return totalBudget - totalSpent;\n    }\n\n    /**\n     * @notice Get budget summary: (totalBudget, totalSpent, remainingBudget).\n     */\n    function getBudgetSummary() external view returns (uint256, uint256, uint256) {\n        return (totalBudget, totalSpent, getRemainingBudget());\n    }\n\n    /**\n     * @notice Fetch payment record for a given requestId.\n     */\n    function getPayment(string calldata requestId)\n        external\n        view\n        returns (\n            string memory _requestId,\n            address _agent,\n            uint256 _amount,\n            string memory _serviceId,\n            string memory _provider,\n            bytes32 _contentHash,\n            uint256 _timestamp\n        )\n    {\n        if (!processedRequests[requestId]) {\n            revert RequestNotFound(requestId);\n        }\n        PaymentRecord memory r = payments[requestId];\n        return (\n            r.requestId,\n            r.agent,\n            r.amount,\n            r.serviceId,\n            r.provider,\n            r.contentHash,\n            r.timestamp\n        );\n    }\n\n    /**\n     * @notice Check if a request ID has already been settled.\n     */\n    function isProcessed(string calldata requestId) external view returns (bool) {\n        return processedRequests[requestId];\n    }\n\n    /**\n     * @notice Total number of settled payments.\n     */\n    function getPaymentCount() external view returns (uint256) {\n        return requestIds.length;\n    }\n\n    /**\n     * @notice Get all settled request IDs.\n     */\n    function getAllRequestIds() external view returns (string[] memory) {\n        return requestIds;\n    }\n}\n"
+      }
+    }
+  }
+}
