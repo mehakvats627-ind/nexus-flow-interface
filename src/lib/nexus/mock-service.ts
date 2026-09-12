@@ -41,7 +41,7 @@ export type Transaction = {
   contentHash: string | null;
   receiptId: string | null;
   createdAt: number;
-  note?: string;
+  note?: string | undefined;
 };
 
 export type Activity = {
@@ -157,7 +157,7 @@ export const newRequestId = () => `req-${String(++counter).padStart(3, "0")}`;
 export const newTxHash = () => hex(64);
 export const newContentHash = () => hex(64);
 export const newReceiptId = () =>
-  `rcpt-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  `rcpt-${rand().toString(36).slice(2, 8).toUpperCase()}`;
 
 export const shortHash = (value: string | null | undefined, size = 4) => {
   if (!value) return "—";
@@ -338,7 +338,7 @@ export const requestIdExists = (id: string) =>
 function pushActivity(a: Omit<Activity, "id" | "createdAt">) {
   return {
     ...a,
-    id: `act-${Math.random().toString(36).slice(2, 9)}`,
+    id: `act-${rand().toString(36).slice(2, 9)}`,
     createdAt: Date.now(),
   } as Activity;
 }
