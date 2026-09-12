@@ -139,10 +139,18 @@ const idleFlow = (): FlowState => ({
 });
 
 let counter = 0;
+
+/** Deterministic PRNG so SSR and client hydration produce identical values. */
+let rngState = 0x9e3779b9;
+const rand = () => {
+  rngState = (rngState * 1664525 + 1013904223) >>> 0;
+  return rngState / 0x100000000;
+};
+
 const hex = (len: number) =>
   "0x" +
   Array.from({ length: len }, () =>
-    "0123456789abcdef"[Math.floor(Math.random() * 16)],
+    "0123456789abcdef"[Math.floor(rand() * 16)],
   ).join("");
 
 export const newRequestId = () => `req-${String(++counter).padStart(3, "0")}`;
