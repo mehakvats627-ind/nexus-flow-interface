@@ -182,36 +182,68 @@ function Dashboard() {
 
         <div className="mx-auto max-w-[1540px] space-y-4 p-3 sm:p-5 lg:p-6">
           {/* Hero */}
-          <section className="relative min-h-[320px] overflow-hidden rounded-xl border border-border bg-panel-strong sm:min-h-[380px]">
+          <section className="relative min-h-[320px] overflow-hidden rounded-xl border border-border bg-panel-strong sm:min-h-[420px]">
             <img
               src={agentHero}
               alt="NEXUS autonomous AI payment agent"
               width={1536}
               height={1024}
-              className="absolute inset-0 size-full object-cover object-[62%_48%] opacity-80"
+              className="absolute inset-0 size-full object-cover object-[48%_45%] opacity-80"
             />
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,var(--background)_0%,color-mix(in_oklab,var(--background)_92%,transparent)_35%,color-mix(in_oklab,var(--background)_25%,transparent)_72%,var(--background)_110%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,var(--background)_0%,color-mix(in_oklab,var(--background)_92%,transparent)_32%,color-mix(in_oklab,var(--background)_22%,transparent)_60%,color-mix(in_oklab,var(--background)_88%,transparent)_100%)]" />
             <div className="absolute inset-0 bg-[linear-gradient(0deg,var(--background)_0%,transparent_38%)]" />
-            <div className="relative z-10 flex min-h-[320px] max-w-xl flex-col justify-center px-6 py-10 sm:min-h-[380px] sm:px-10">
-              <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.28em] text-primary">
+            <span className="glow-pulse pointer-events-none absolute -left-24 top-1/3 size-72 rounded-full bg-primary/20 blur-[90px]" />
+            <span className="glow-pulse pointer-events-none absolute right-1/4 -top-20 size-64 rounded-full bg-violet-500/15 blur-[90px]" />
+            <span className="ring-spin pointer-events-none absolute -bottom-40 right-8 size-[420px] rounded-full border border-primary/10" />
+
+            <div className="relative z-10 flex min-h-[320px] max-w-xl flex-col justify-center px-6 py-10 sm:min-h-[420px] sm:px-10">
+              <p className="rise mb-4 text-[10px] font-semibold uppercase tracking-[0.28em] text-primary">
                 AI agents. Real payments. Human control.
               </p>
-              <h1 className="font-display text-4xl font-semibold leading-[0.98] sm:text-6xl">
+              <h1 className="rise font-display text-4xl font-semibold leading-[0.98] sm:text-6xl" style={{ animationDelay: "80ms" }}>
                 Give AI <span className="bg-gradient-to-r from-primary via-cyan-300 to-violet-400 bg-clip-text text-transparent">Real</span><br />Purchasing Power.
               </h1>
-              <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
+              <p className="rise mt-5 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base" style={{ animationDelay: "160ms" }}>
                 Let your AI agent buy the services it needs — while you stay in control.
               </p>
-              <Button size="lg" className="mt-6 w-fit">Run Demo <ArrowRight className="size-4" /></Button>
+              <div className="rise mt-6" style={{ animationDelay: "240ms" }}>
+                <Button size="lg" className="group w-fit shadow-glow transition-transform hover:scale-[1.03]">
+                  Run Demo <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </div>
             </div>
-            <div className="pointer-events-none absolute right-8 top-8 z-10 hidden flex-col items-end gap-3 xl:flex">
-              {actions.map(({ name, icon: Icon }) => (
-                <span key={name} className="agent-drift flex items-center gap-2 rounded-lg border border-primary/25 bg-background/60 px-3 py-2 text-xs backdrop-blur-md">
+
+            {/* Floating service chips */}
+            <div className="pointer-events-none absolute left-[52%] top-8 z-10 hidden flex-col gap-3 lg:flex">
+              {actions.map(({ name, icon: Icon }, i) => (
+                <span
+                  key={name}
+                  className="float-slow flex w-fit items-center gap-2 rounded-lg border border-primary/25 bg-background/55 px-3 py-2 text-xs shadow-glow backdrop-blur-md"
+                  style={{ animationDelay: `${i * 900}ms`, marginLeft: `${i % 2 ? 44 : 0}px` }}
+                >
                   <Icon className="size-3.5 text-primary" />{name}
                 </span>
               ))}
-              <span className="mt-4 max-w-[190px] text-right text-[10px] uppercase leading-relaxed tracking-[0.2em] text-muted-foreground">
-                A safer, more open economy for AI agents.
+              <span className="mt-2 max-w-[180px] font-display text-sm italic leading-snug text-foreground/80">
+                …same AI.<br />Smarter spending.
+              </span>
+            </div>
+
+            {/* Glass cube + quote */}
+            <div className="pointer-events-none absolute right-6 top-0 z-10 hidden h-full w-[300px] flex-col items-center justify-center gap-3 xl:flex">
+              <p className="max-w-[210px] text-center font-display text-sm italic leading-relaxed text-foreground/85">
+                “Financial freedom for AI agents, with human control.”
+              </p>
+              <img
+                src={cube}
+                alt=""
+                loading="lazy"
+                width={816}
+                height={816}
+                className="float-slow size-40 object-contain drop-shadow-[0_0_40px_color-mix(in_oklab,var(--primary)_45%,transparent)]"
+              />
+              <span className="max-w-[180px] text-center text-[10px] uppercase leading-relaxed tracking-[0.2em] text-muted-foreground">
+                Multiple services. One budget.
               </span>
             </div>
           </section>
