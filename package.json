@@ -91,6 +91,6 @@
     "solc": "^0.8.20",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
-    "vite": "8.1.5"
+    "vite": "^7.3.2"
   }
 }
