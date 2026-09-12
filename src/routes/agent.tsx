@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Activity as ActivityIcon, Bot, ShieldCheck, Wallet } from "lucide-react";
 import { AppShell } from "@/components/nexus/app-shell";
-import { CopyValue, Panel, PanelTitle, Stat, StatusPill } from "@/components/nexus/ui";
+import { CopyValue, Panel, PanelTitle, Stat } from "@/components/nexus/ui";
 import {
   AGENT_ADDRESS,
   CONTRACT_ADDRESS,
@@ -136,5 +136,3 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
     </div>
   );
 }
-
-export { StatusPill };
