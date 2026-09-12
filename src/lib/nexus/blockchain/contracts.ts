@@ -49,51 +49,14 @@ export const ERC20_ABI = [
   "event Approval(address indexed owner, address indexed spender, uint256 value)",
 ];
 
-import { ethers } from "ethers";
-
-const env =
-  typeof import.meta !== "undefined" && import.meta.env
-    ? import.meta.env
-    : ({} as Record<string, string | undefined>);
-
-function safeChecksum(addr: string, fallback: string): string {
-  try {
-    return ethers.getAddress(addr.toLowerCase());
-  } catch {
-    return fallback;
-  }
-}
-
-export const CONTRACT_ADDRESS = safeChecksum(
-  env.VITE_CONTRACT_ADDRESS || env.CONTRACT_ADDRESS || "0x5fe21ab9c07d4e1b83ac6f0d92b7431aef08c6d1",
-  "0x5fe21aB9C07d4E1B83Ac6F0D92B7431AeF08C6D1",
-);
-
-export const USDC_ADDRESS = safeChecksum(
-  env.VITE_USDC_ADDRESS || env.USDC_ADDRESS || "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238",
-  "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
-);
-
-export const AGENT_ADDRESS = safeChecksum(
-  env.VITE_AGENT_ADDRESS || env.AGENT_ADDRESS || "0xb7c4f19a2d63e8a1f05cb7d3e9a0c41f5d9c4d22",
-  "0xB7C4F19a2d63e8A1f05Cb7d3e9A0c41F5d9c4d22",
-);
-
-export const OWNER_ADDRESS = safeChecksum(
-  env.VITE_OWNER_ADDRESS || env.OWNER_ADDRESS || "0xa34f81cb27ee09d4ba6c1e7f0a25b9d3e1c87f2b",
-  "0xa34f81Cb27Ee09d4ba6C1e7f0A25B9d3E1C87F2b",
-);
-
+export const CONTRACT_ADDRESS = "0x5fe21aB9C07d4E1B83Ac6F0D92B7431AeF08C6D1";
+export const USDC_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
+export const AGENT_ADDRESS = "0xB7C4F19a2d63e8A1f05Cb7d3e9A0c41F5d9c4d22";
+export const OWNER_ADDRESS = "0xa34f81Cb27Ee09d4ba6C1e7f0A25B9d3E1C87F2b";
 export const SEPOLIA_RPC_URL =
-  env.VITE_SEPOLIA_RPC_URL || env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com";
-
-export const PRIVATE_KEY = env.VITE_PRIVATE_KEY || env.PRIVATE_KEY || "";
-
-export const NETWORK = env.VITE_NETWORK || env.NETWORK || "Sepolia Testnet";
-
+  "https://ethereum-sepolia-rpc.publicnode.com";
+export const NETWORK = "Sepolia Testnet";
 export const CHAIN_ID = 11155111;
-
 export const EXPLORER_BASE_URL = "https://sepolia.etherscan.io";
-
 export const getExplorerTxUrl = (txHash: string) => `${EXPLORER_BASE_URL}/tx/${txHash}`;
 export const getExplorerAddressUrl = (address: string) => `${EXPLORER_BASE_URL}/address/${address}`;
