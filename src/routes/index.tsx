@@ -134,17 +134,28 @@ function Dashboard() {
             </a>
           ))}
         </nav>
-        <div className="mt-auto overflow-hidden rounded-xl border border-primary/20 bg-secondary/55 p-4">
-          <div className="mb-8 flex items-center justify-between">
-            <Box className="size-5 text-primary" />
-            <span className="text-[9px] uppercase tracking-[0.22em] text-muted-foreground">Protocol 01</span>
+        <div className="lift relative mt-auto overflow-hidden rounded-xl border border-primary/20 bg-secondary/55 p-4">
+          <img
+            src={swirl}
+            alt=""
+            loading="lazy"
+            width={672}
+            height={992}
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-[62%] w-full object-cover opacity-70 transition-transform duration-700 hover:scale-105"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,var(--secondary)_0%,transparent_42%,color-mix(in_oklab,var(--background)_82%,transparent)_100%)]" />
+          <div className="relative">
+            <div className="mb-3 flex items-center justify-between">
+              <Box className="size-5 text-primary" />
+              <span className="text-[9px] uppercase tracking-[0.22em] text-muted-foreground">Protocol 01</span>
+            </div>
+            <p className="font-display text-lg font-semibold leading-tight">
+              Empowering the next<br /><span className="text-primary">generation of AI.</span>
+            </p>
+            <p className="mt-[110px] text-xs leading-relaxed text-muted-foreground">
+              More autonomy.<br />More possibilities.<br />More trust.
+            </p>
           </div>
-          <p className="font-display text-lg font-semibold leading-tight">
-            Empowering the next<br /><span className="text-primary">generation of AI.</span>
-          </p>
-          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            More autonomy. More possibilities. More trust.
-          </p>
         </div>
         <p className="mt-4 px-2 text-[9px] uppercase tracking-[0.2em] text-muted-foreground/70">v0.1.0 · Hack the Future</p>
       </aside>
