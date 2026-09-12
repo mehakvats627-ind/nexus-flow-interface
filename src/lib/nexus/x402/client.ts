@@ -47,7 +47,10 @@ export interface X402ExecutionResult {
 /**
  * Generates an HTTP 402 Payment Required challenge for a requested service.
  */
-export function createPaymentChallenge(serviceId: ServiceId, requestId: string): X402PaymentChallenge {
+export function createPaymentChallenge(
+  serviceId: ServiceId,
+  requestId: string,
+): X402PaymentChallenge {
   const svc = getService(serviceId);
   return {
     statusCode: 402,
@@ -76,7 +79,17 @@ export function createPaymentChallenge(serviceId: ServiceId, requestId: string):
 export async function executeX402PaymentFlow(
   serviceId: ServiceId,
   requestId: string,
-  onStageChange?: (stage: "request" | "payment-required" | "processing" | "paid" | "delivered" | "receipt" | "blocked" | "duplicate") => void
+  onStageChange?: (
+    stage:
+      | "request"
+      | "payment-required"
+      | "processing"
+      | "paid"
+      | "delivered"
+      | "receipt"
+      | "blocked"
+      | "duplicate",
+  ) => void,
 ): Promise<X402ExecutionResult> {
   const svc = getService(serviceId);
   const challenge = createPaymentChallenge(serviceId, requestId);
@@ -102,7 +115,7 @@ export async function executeX402PaymentFlow(
     svc.id,
     svc.provider,
     svc.price,
-    output
+    output,
   );
 
   if (!settlement.success) {

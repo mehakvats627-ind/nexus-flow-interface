@@ -5,8 +5,13 @@ import { AppShell } from "@/components/nexus/app-shell";
 import { TransactionDetail } from "@/components/nexus/transaction-detail";
 import { Panel, PanelTitle, Stat, StatusPill } from "@/components/nexus/ui";
 import {
-  formatUSD, getStats, getTransactions, shortHash, timeAgo,
-  type Transaction, type TxStatus,
+  formatUSD,
+  getStats,
+  getTransactions,
+  shortHash,
+  timeAgo,
+  type Transaction,
+  type TxStatus,
 } from "@/lib/nexus/mock-service";
 import { useNexusVersion } from "@/lib/nexus/use-nexus";
 
@@ -14,9 +19,17 @@ export const Route = createFileRoute("/transactions")({
   head: () => ({
     meta: [
       { title: "Transactions — NEXUS" },
-      { name: "description", content: "Every agent payment with success, blocked and duplicate states, hashes and receipts." },
+      {
+        name: "description",
+        content:
+          "Every agent payment with success, blocked and duplicate states, hashes and receipts.",
+      },
       { property: "og:title", content: "Transactions — NEXUS" },
-      { property: "og:description", content: "Every agent payment with success, blocked and duplicate states, hashes and receipts." },
+      {
+        property: "og:description",
+        content:
+          "Every agent payment with success, blocked and duplicate states, hashes and receipts.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -67,7 +80,9 @@ function TransactionsPage() {
         />
         <div className="divide-y divide-border/70">
           {rows.length === 0 && (
-            <p className="p-6 text-center text-xs text-muted-foreground">No {filter.toLowerCase()} transactions yet.</p>
+            <p className="p-6 text-center text-xs text-muted-foreground">
+              No {filter.toLowerCase()} transactions yet.
+            </p>
           )}
           {rows.map((tx) => (
             <button
@@ -76,13 +91,21 @@ function TransactionsPage() {
               onClick={() => setDetail(tx)}
               className="flex w-full items-center gap-3 px-5 py-3.5 text-left text-xs transition-colors hover:bg-accent/50"
             >
-              <span className="grid size-8 place-items-center rounded-md bg-primary/10 text-primary"><FileText className="size-3.5" /></span>
+              <span className="grid size-8 place-items-center rounded-md bg-primary/10 text-primary">
+                <FileText className="size-3.5" />
+              </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate">{tx.service}</span>
-                <span className="block font-mono text-[10px] text-muted-foreground">{tx.requestId} · {tx.provider}</span>
+                <span className="block font-mono text-[10px] text-muted-foreground">
+                  {tx.requestId} · {tx.provider}
+                </span>
               </span>
-              <span className="hidden font-mono text-[10px] text-muted-foreground sm:block">{shortHash(tx.txHash)}</span>
-              <span className="hidden text-[10px] text-muted-foreground md:block">{timeAgo(tx.createdAt)}</span>
+              <span className="hidden font-mono text-[10px] text-muted-foreground sm:block">
+                {shortHash(tx.txHash)}
+              </span>
+              <span className="hidden text-[10px] text-muted-foreground md:block">
+                {timeAgo(tx.createdAt)}
+              </span>
               <span className="font-display">{formatUSD(tx.amount)}</span>
               <StatusPill status={tx.status} />
             </button>

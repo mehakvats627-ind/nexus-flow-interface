@@ -26,9 +26,16 @@ export function Panel({
   children,
   className = "",
   delay = 0,
-}: { children: React.ReactNode; className?: string; delay?: number }) {
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) {
   return (
-    <section className={`glass-panel lift rise rounded-xl ${className}`} style={{ animationDelay: `${delay}ms` }}>
+    <section
+      className={`glass-panel lift rise rounded-xl ${className}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
       {children}
     </section>
   );
@@ -49,10 +56,14 @@ export function PanelTitle({
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
       <div className="flex items-center gap-2.5">
-        <span className={`grid size-8 place-items-center rounded-md ${danger ? "bg-destructive/15 text-destructive" : "bg-primary/10 text-primary"}`}>
+        <span
+          className={`grid size-8 place-items-center rounded-md ${danger ? "bg-destructive/15 text-destructive" : "bg-primary/10 text-primary"}`}
+        >
           <Icon className="size-4" />
         </span>
-        <h2 className={`font-display text-sm font-semibold ${danger ? "text-destructive" : ""}`}>{title}</h2>
+        <h2 className={`font-display text-sm font-semibold ${danger ? "text-destructive" : ""}`}>
+          {title}
+        </h2>
       </div>
       {aside}
     </div>
@@ -64,7 +75,12 @@ export function CopyValue({
   display,
   label = "Value",
   className = "",
-}: { value: string; display?: string; label?: string; className?: string }) {
+}: {
+  value: string;
+  display?: string;
+  label?: string;
+  className?: string;
+}) {
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -103,7 +119,9 @@ export function StatusPill({ status }: { status: TxStatus }) {
         ? "bg-destructive/15 text-destructive border-destructive/30"
         : "bg-warning/10 text-warning border-warning/25";
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium ${tone}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium ${tone}`}
+    >
       <span className="size-1.5 rounded-full bg-current" />
       {status}
     </span>
@@ -115,9 +133,20 @@ export function Stat({
   value,
   hint,
   tone = "default",
-}: { label: string; value: string; hint?: string; tone?: "default" | "primary" | "danger" | "success" }) {
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  tone?: "default" | "primary" | "danger" | "success";
+}) {
   const color =
-    tone === "primary" ? "text-primary" : tone === "danger" ? "text-destructive" : tone === "success" ? "text-success" : "";
+    tone === "primary"
+      ? "text-primary"
+      : tone === "danger"
+        ? "text-destructive"
+        : tone === "success"
+          ? "text-success"
+          : "";
   return (
     <div className="glass-panel lift rounded-xl p-4">
       <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</p>

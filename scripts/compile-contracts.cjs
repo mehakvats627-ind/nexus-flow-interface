@@ -4,13 +4,19 @@ const solc = require("solc");
 
 function compile() {
   const contractPath = path.resolve(__dirname, "../contracts/NexusBudgetManager.sol");
+  const testContractPath = path.resolve(__dirname, "../contracts/test/NexusBudgetManager.t.sol");
+
   const source = fs.readFileSync(contractPath, "utf8");
+  const testSource = fs.readFileSync(testContractPath, "utf8");
 
   const input = {
     language: "Solidity",
     sources: {
       "NexusBudgetManager.sol": {
         content: source,
+      },
+      "test/NexusBudgetManager.t.sol": {
+        content: testSource,
       },
     },
     settings: {
@@ -26,7 +32,7 @@ function compile() {
     },
   };
 
-  console.log("Compiling NexusBudgetManager.sol with solc...");
+  console.log("Compiling Solidity contracts with solc...");
   const output = JSON.parse(solc.compile(JSON.stringify(input)));
 
   if (output.errors) {
@@ -44,31 +50,31 @@ function compile() {
     }
   }
 
-  const contract = output.contracts["NexusBudgetManager.sol"]["NexusBudgetManager"];
-  const abi = contract.abi;
-  const bytecode = contract.evm.bytecode.object;
-
   const artifactDir = path.resolve(__dirname, "../contracts/artifacts");
   if (!fs.existsSync(artifactDir)) {
     fs.mkdirSync(artifactDir, { recursive: true });
   }
 
-  const artifact = {
-    contractName: "NexusBudgetManager",
-    abi,
-    bytecode,
-    deployedBytecode: contract.evm.deployedBytecode.object,
-    compiledAt: new Date().toISOString(),
-  };
+  for (const [sourceFile, contracts] of Object.entries(output.contracts)) {
+    for (const [contractName, contractData] of Object.entries(contracts)) {
+      const artifact = {
+        contractName,
+        sourceName: sourceFile,
+        abi: contractData.abi,
+        bytecode: contractData.evm.bytecode.object,
+        deployedBytecode: contractData.evm.deployedBytecode.object,
+        compiledAt: new Date().toISOString(),
+      };
 
-  fs.writeFileSync(
-    path.join(artifactDir, "NexusBudgetManager.json"),
-    JSON.stringify(artifact, null, 2),
-    "utf8"
-  );
+      fs.writeFileSync(
+        path.join(artifactDir, `${contractName}.json`),
+        JSON.stringify(artifact, null, 2),
+        "utf8",
+      );
+    }
+  }
 
-  console.log("Compilation successful! Artifact saved to contracts/artifacts/NexusBudgetManager.json");
-  return artifact;
+  console.log("Compilation successful! Artifacts saved to contracts/artifacts.");
 }
 
 if (require.main === module) {

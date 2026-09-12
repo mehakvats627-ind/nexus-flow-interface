@@ -23,12 +23,14 @@ export const Route = createFileRoute("/settings")({
       { title: "Settings — NEXUS" },
       {
         name: "description",
-        content: "Budget cap, agent wallet, service providers and network configuration for the NEXUS agent.",
+        content:
+          "Budget cap, agent wallet, service providers and network configuration for the NEXUS agent.",
       },
       { property: "og:title", content: "Settings — NEXUS" },
       {
         property: "og:description",
-        content: "Budget cap, agent wallet, service providers and network configuration for the NEXUS agent.",
+        content:
+          "Budget cap, agent wallet, service providers and network configuration for the NEXUS agent.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -47,12 +49,30 @@ function SettingsPage() {
         <PanelTitle
           icon={Settings2}
           title="Budget Configuration"
-          aside={<span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Owner controlled</span>}
+          aside={
+            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              Owner controlled
+            </span>
+          }
         />
         <div className="grid gap-4 p-5 sm:grid-cols-3">
-          <Stat label="Total budget" value={formatUSD(budget.total)} tone="primary" hint="Hard cap enforced on-chain" />
-          <Stat label="Spent" value={formatUSD(budget.spent)} hint={`${budget.spentPct.toFixed(0)}% used`} />
-          <Stat label="Remaining" value={formatUSD(budget.remaining)} tone="success" hint="Agent spend allowance" />
+          <Stat
+            label="Total budget"
+            value={formatUSD(budget.total)}
+            tone="primary"
+            hint="Hard cap enforced on-chain"
+          />
+          <Stat
+            label="Spent"
+            value={formatUSD(budget.spent)}
+            hint={`${budget.spentPct.toFixed(0)}% used`}
+          />
+          <Stat
+            label="Remaining"
+            value={formatUSD(budget.remaining)}
+            tone="success"
+            hint="Agent spend allowance"
+          />
         </div>
       </Panel>
 
@@ -60,9 +80,36 @@ function SettingsPage() {
         <Panel delay={100}>
           <PanelTitle icon={Wallet} title="Wallets & Contract" />
           <dl className="space-y-2.5 p-5 text-xs">
-            <Row k="Agent address" v={<CopyValue value={AGENT_ADDRESS} display={shortHash(AGENT_ADDRESS, 6)} label="Agent address" />} />
-            <Row k="Owner wallet" v={<CopyValue value={OWNER_ADDRESS} display={shortHash(OWNER_ADDRESS, 6)} label="Owner wallet" />} />
-            <Row k="Budget contract" v={<CopyValue value={CONTRACT_ADDRESS} display={shortHash(CONTRACT_ADDRESS, 6)} label="Contract address" />} />
+            <Row
+              k="Agent address"
+              v={
+                <CopyValue
+                  value={AGENT_ADDRESS}
+                  display={shortHash(AGENT_ADDRESS, 6)}
+                  label="Agent address"
+                />
+              }
+            />
+            <Row
+              k="Owner wallet"
+              v={
+                <CopyValue
+                  value={OWNER_ADDRESS}
+                  display={shortHash(OWNER_ADDRESS, 6)}
+                  label="Owner wallet"
+                />
+              }
+            />
+            <Row
+              k="Budget contract"
+              v={
+                <CopyValue
+                  value={CONTRACT_ADDRESS}
+                  display={shortHash(CONTRACT_ADDRESS, 6)}
+                  label="Contract address"
+                />
+              }
+            />
           </dl>
         </Panel>
 
@@ -88,7 +135,9 @@ function SettingsPage() {
             >
               <p className="font-display text-sm font-semibold">{s.name}</p>
               <p className="mt-1 text-[11px] text-muted-foreground">{s.provider}</p>
-              <p className="mt-3 font-display text-lg font-semibold text-primary">{formatUSD(s.price)}</p>
+              <p className="mt-3 font-display text-lg font-semibold text-primary">
+                {formatUSD(s.price)}
+              </p>
             </div>
           ))}
         </div>
@@ -98,7 +147,8 @@ function SettingsPage() {
         <PanelTitle icon={RotateCcw} title="Demo Controls" />
         <div className="flex flex-wrap items-center justify-between gap-4 p-5">
           <p className="max-w-lg text-xs text-muted-foreground">
-            Reset the simulation to its starting state — budget, transactions, receipts and activity are all restored.
+            Reset the simulation to its starting state — budget, transactions, receipts and activity
+            are all restored.
           </p>
           <Button
             variant="outline"

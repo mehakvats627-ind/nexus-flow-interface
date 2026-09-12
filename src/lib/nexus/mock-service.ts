@@ -9,7 +9,14 @@
 import { blockchainEngine } from "./blockchain/client";
 import { AGENT_ADDRESS, CONTRACT_ADDRESS, NETWORK, OWNER_ADDRESS } from "./blockchain/contracts";
 import { computeContentHash } from "./blockchain/crypto";
-import { generateServiceOutput, getService, getServices, ServiceDefinition, ServiceId, SERVICES } from "./services/providers";
+import {
+  generateServiceOutput,
+  getService,
+  getServices,
+  ServiceDefinition,
+  ServiceId,
+  SERVICES,
+} from "./services/providers";
 import { executeX402PaymentFlow, X402Receipt } from "./x402/client";
 
 export type { ServiceId };
@@ -109,7 +116,8 @@ const idleFlow = (): FlowState => ({
 let counter = 0;
 
 export const newRequestId = () => `req-${String(++counter).padStart(3, "0")}`;
-export const newTxHash = () => `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
+export const newTxHash = () =>
+  `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
 export const newContentHash = (content = "nexus") => computeContentHash(content);
 export const newReceiptId = () => `rcpt-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
@@ -257,8 +265,7 @@ export const getTransaction = (requestId: string, createdAt?: number) =>
 export const getActivities = (): Activity[] =>
   [...state.activities].sort((a, b) => b.createdAt - a.createdAt);
 
-export const getReceipt = (requestId: string): Receipt | null =>
-  state.receipts[requestId] ?? null;
+export const getReceipt = (requestId: string): Receipt | null => state.receipts[requestId] ?? null;
 
 export const getLatestReceipt = (): Receipt | null => {
   const tx = getTransactions("Success")[0];
@@ -296,10 +303,7 @@ export function resetFlow() {
 /**
  * Step 1 — the agent requests a service and prepares the flow state.
  */
-export function requestService(
-  serviceId: ServiceId,
-  reuseRequestId?: string,
-): FlowState {
+export function requestService(serviceId: ServiceId, reuseRequestId?: string): FlowState {
   const svc = getService(serviceId);
   const budget = getBudget();
   const requestId = reuseRequestId?.trim() || newRequestId();
@@ -329,13 +333,9 @@ export async function processPayment(): Promise<FlowState> {
   const svc = getService(currentFlow.serviceId);
   const requestId = currentFlow.requestId;
 
-  const result = await executeX402PaymentFlow(
-    currentFlow.serviceId,
-    requestId,
-    (stage) => {
-      commit({ flow: { ...state.flow, stage } });
-    }
-  );
+  const result = await executeX402PaymentFlow(currentFlow.serviceId, requestId, (stage) => {
+    commit({ flow: { ...state.flow, stage } });
+  });
 
   if (!result.success) {
     if (result.stage === "duplicate") {

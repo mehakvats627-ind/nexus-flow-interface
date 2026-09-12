@@ -9,9 +9,8 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write .",
-    "test": "hardhat test",
-    "compile:contracts": "hardhat compile"
+    "test": "hardhat test --config hardhat.config.cjs",
+    "compile:contracts": "node scripts/compile-contracts.cjs && hardhat compile --config hardhat.config.cjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
@@ -87,7 +86,7 @@
     "eslint-plugin-react-refresh": "^0.4.20",
     "ethers": "^6.13.5",
     "globals": "^15.15.0",
-    "hardhat": "^3.16.0",
+    "hardhat": "^2.29.1",
     "nitro": "3.0.260603-beta",
     "prettier": "^3.7.3",
     "solc": "^0.8.20",

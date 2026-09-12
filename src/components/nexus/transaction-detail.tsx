@@ -1,15 +1,28 @@
 import { ArrowUpRight, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { CopyValue, StatusPill } from "@/components/nexus/ui";
 import {
-  formatUSD, getReceipt, shortHash, timeAgo, type Transaction,
+  formatUSD,
+  getReceipt,
+  shortHash,
+  timeAgo,
+  type Transaction,
 } from "@/lib/nexus/mock-service";
 
 export function TransactionDetail({
   tx,
   onOpenChange,
-}: { tx: Transaction | null; onOpenChange: (open: boolean) => void }) {
+}: {
+  tx: Transaction | null;
+  onOpenChange: (open: boolean) => void;
+}) {
   if (!tx) return null;
   const receipt = tx.status === "Success" ? getReceipt(tx.requestId) : null;
 
@@ -21,21 +34,37 @@ export function TransactionDetail({
     ["Status", <StatusPill key="s" status={tx.status} />],
     [
       "Transaction Hash",
-      tx.txHash
-        ? <CopyValue key="t" value={tx.txHash} display={shortHash(tx.txHash, 8)} label="Transaction hash" />
-        : <span className="text-muted-foreground">—</span>,
+      tx.txHash ? (
+        <CopyValue
+          key="t"
+          value={tx.txHash}
+          display={shortHash(tx.txHash, 8)}
+          label="Transaction hash"
+        />
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      ),
     ],
     [
       "Content Hash",
-      tx.contentHash
-        ? <CopyValue key="c" value={tx.contentHash} display={shortHash(tx.contentHash, 8)} label="Content hash" />
-        : <span className="text-muted-foreground">—</span>,
+      tx.contentHash ? (
+        <CopyValue
+          key="c"
+          value={tx.contentHash}
+          display={shortHash(tx.contentHash, 8)}
+          label="Content hash"
+        />
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      ),
     ],
     [
       "Receipt",
-      tx.receiptId
-        ? <CopyValue key="rc" value={tx.receiptId} label="Receipt ID" />
-        : <span className="text-muted-foreground">Not issued</span>,
+      tx.receiptId ? (
+        <CopyValue key="rc" value={tx.receiptId} label="Receipt ID" />
+      ) : (
+        <span className="text-muted-foreground">Not issued</span>
+      ),
     ],
     ["Time", timeAgo(tx.createdAt)],
   ];
@@ -61,12 +90,30 @@ export function TransactionDetail({
 
         {receipt && (
           <div className="rounded-lg border border-border bg-secondary/40 p-4">
-            <p className="flex items-center gap-2 text-xs font-semibold"><FileText className="size-3.5 text-primary" /> Delivered output</p>
-            <p className="mt-2 break-words font-mono text-[11px] text-muted-foreground">{receipt.output}</p>
+            <p className="flex items-center gap-2 text-xs font-semibold">
+              <FileText className="size-3.5 text-primary" /> Delivered output
+            </p>
+            <p className="mt-2 break-words font-mono text-[11px] text-muted-foreground">
+              {receipt.output}
+            </p>
           </div>
         )}
 
-        <Button variant="outline" size="sm" className="w-full justify-between" disabled={!tx.txHash}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full justify-between"
+          disabled={!tx.txHash}
+          onClick={() => {
+            if (tx.txHash) {
+              window.open(
+                `https://sepolia.etherscan.io/tx/${tx.txHash}`,
+                "_blank",
+                "noopener,noreferrer",
+              );
+            }
+          }}
+        >
           View on Explorer <ArrowUpRight className="size-3" />
         </Button>
       </DialogContent>

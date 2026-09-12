@@ -1,6 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import {
-  Bell, Bot, Box, History, LayoutDashboard, Menu, PanelsTopLeft, Settings, Settings2, X,
+  Bell,
+  Bot,
+  Box,
+  History,
+  LayoutDashboard,
+  Menu,
+  PanelsTopLeft,
+  Settings,
+  Settings2,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import swirl from "@/assets/nexus-swirl.jpg";
@@ -50,13 +59,21 @@ function SidebarPromo() {
       <div className="relative">
         <div className="mb-3 flex items-center justify-between">
           <Box className="size-5 text-primary" />
-          <span className="text-[9px] uppercase tracking-[0.22em] text-muted-foreground">Protocol 01</span>
+          <span className="text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
+            Protocol 01
+          </span>
         </div>
         <p className="font-display text-lg font-semibold leading-tight">
-          Empowering the next<br /><span className="text-primary">generation of AI.</span>
+          Empowering the next
+          <br />
+          <span className="text-primary">generation of AI.</span>
         </p>
         <p className="mt-[110px] text-xs leading-relaxed text-muted-foreground">
-          More autonomy.<br />More possibilities.<br />More trust.
+          More autonomy.
+          <br />
+          More possibilities.
+          <br />
+          More trust.
         </p>
       </div>
     </div>
@@ -66,36 +83,58 @@ function SidebarPromo() {
 export function AppShell({
   breadcrumb,
   children,
-}: { breadcrumb: string; children: React.ReactNode }) {
+}: {
+  breadcrumb: string;
+  children: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
     <div className="grid-surface min-h-screen overflow-x-hidden bg-background text-foreground">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-background/85 px-4 py-6 backdrop-blur-xl lg:flex">
-        <div className="px-2"><BrandMark /></div>
-        <div className="mt-10"><NavLinks /></div>
+        <div className="px-2">
+          <BrandMark />
+        </div>
+        <div className="mt-10">
+          <NavLinks />
+        </div>
         <SidebarPromo />
-        <p className="mt-4 px-2 text-[9px] uppercase tracking-[0.2em] text-muted-foreground/70">v0.1.0 · Hack the Future</p>
+        <p className="mt-4 px-2 text-[9px] uppercase tracking-[0.2em] text-muted-foreground/70">
+          v0.1.0 · Hack the Future
+        </p>
       </aside>
 
       {open && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <button aria-label="Close menu" className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <button
+            aria-label="Close menu"
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            onClick={() => setOpen(false)}
+          />
           <div className="relative flex h-full w-64 flex-col border-r border-border bg-background/95 px-4 py-6">
             <div className="flex items-center justify-between px-2">
               <BrandMark />
-              <Button variant="ghost" size="icon-sm" aria-label="Close menu" onClick={() => setOpen(false)}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Close menu"
+                onClick={() => setOpen(false)}
+              >
                 <X className="size-4" />
               </Button>
             </div>
-            <div className="mt-8"><NavLinks onNavigate={() => setOpen(false)} /></div>
+            <div className="mt-8">
+              <NavLinks onNavigate={() => setOpen(false)} />
+            </div>
           </div>
         </div>
       )}
 
       <main className="min-h-screen lg:ml-60">
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-background/75 px-4 backdrop-blur-xl sm:px-7">
-          <div className="lg:hidden"><BrandMark compact /></div>
+          <div className="lg:hidden">
+            <BrandMark compact />
+          </div>
           <div className="hidden lg:block">
             <p className="text-xs text-muted-foreground">
               Control center <span className="mx-2 text-border">/</span>
@@ -107,12 +146,27 @@ export function AppShell({
               <span className="size-2 rounded-full bg-success shadow-[0_0_12px_var(--success)]" />
               <span className="hidden sm:inline">{NETWORK}</span>
             </div>
-            <Button variant="ghost" size="icon-sm" aria-label="Notifications"><Bell className="size-4" /></Button>
+            <Button variant="ghost" size="icon-sm" aria-label="Notifications">
+              <Bell className="size-4" />
+            </Button>
             <div className="hidden h-10 items-center gap-3 rounded-lg border border-border bg-secondary/60 px-2.5 sm:flex">
-              <span className="grid size-6 place-items-center rounded-full bg-accent text-xs">U</span>
-              <CopyValue value={OWNER_ADDRESS} display={shortHash(OWNER_ADDRESS)} label="Owner address" className="text-xs" />
+              <span className="grid size-6 place-items-center rounded-full bg-accent text-xs">
+                U
+              </span>
+              <CopyValue
+                value={OWNER_ADDRESS}
+                display={shortHash(OWNER_ADDRESS)}
+                label="Owner address"
+                className="text-xs"
+              />
             </div>
-            <Button variant="ghost" size="icon-sm" className="lg:hidden" aria-label="Open menu" onClick={() => setOpen(true)}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="lg:hidden"
+              aria-label="Open menu"
+              onClick={() => setOpen(true)}
+            >
               <Menu className="size-4" />
             </Button>
           </div>

@@ -22,12 +22,14 @@ export const Route = createFileRoute("/agent")({
       { title: "AI Agent — NEXUS" },
       {
         name: "description",
-        content: "Live status of the NEXUS autonomous purchasing agent: authorization, budget, spend and enforcement.",
+        content:
+          "Live status of the NEXUS autonomous purchasing agent: authorization, budget, spend and enforcement.",
       },
       { property: "og:title", content: "AI Agent — NEXUS" },
       {
         property: "og:description",
-        content: "Live status of the NEXUS autonomous purchasing agent: authorization, budget, spend and enforcement.",
+        content:
+          "Live status of the NEXUS autonomous purchasing agent: authorization, budget, spend and enforcement.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -58,10 +60,29 @@ function AgentPage() {
         <div className="relative overflow-hidden p-5">
           <span className="glow-pulse pointer-events-none absolute -right-16 -top-20 size-64 rounded-full bg-primary/15 blur-3xl" />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat label="Authorization" value="Authorized" tone="success" hint="Signed by owner wallet" />
-            <Stat label="Budget" value={formatUSD(budget.total)} tone="primary" hint="Hard cap per session" />
-            <Stat label="Spent" value={formatUSD(budget.spent)} hint={`${budget.spentPct.toFixed(0)}% of budget`} />
-            <Stat label="Remaining" value={formatUSD(budget.remaining)} tone="success" hint="Available to the agent" />
+            <Stat
+              label="Authorization"
+              value="Authorized"
+              tone="success"
+              hint="Signed by owner wallet"
+            />
+            <Stat
+              label="Budget"
+              value={formatUSD(budget.total)}
+              tone="primary"
+              hint="Hard cap per session"
+            />
+            <Stat
+              label="Spent"
+              value={formatUSD(budget.spent)}
+              hint={`${budget.spentPct.toFixed(0)}% of budget`}
+            />
+            <Stat
+              label="Remaining"
+              value={formatUSD(budget.remaining)}
+              tone="success"
+              hint="Available to the agent"
+            />
           </div>
 
           <div className="mt-6">
@@ -85,9 +106,36 @@ function AgentPage() {
         <Panel delay={100}>
           <PanelTitle icon={Wallet} title="Identity & Enforcement" />
           <dl className="space-y-2.5 p-5 text-xs">
-            <Row k="Agent address" v={<CopyValue value={AGENT_ADDRESS} display={shortHash(AGENT_ADDRESS, 6)} label="Agent address" />} />
-            <Row k="Owner wallet" v={<CopyValue value={OWNER_ADDRESS} display={shortHash(OWNER_ADDRESS, 6)} label="Owner wallet" />} />
-            <Row k="Budget contract" v={<CopyValue value={CONTRACT_ADDRESS} display={shortHash(CONTRACT_ADDRESS, 6)} label="Contract address" />} />
+            <Row
+              k="Agent address"
+              v={
+                <CopyValue
+                  value={AGENT_ADDRESS}
+                  display={shortHash(AGENT_ADDRESS, 6)}
+                  label="Agent address"
+                />
+              }
+            />
+            <Row
+              k="Owner wallet"
+              v={
+                <CopyValue
+                  value={OWNER_ADDRESS}
+                  display={shortHash(OWNER_ADDRESS, 6)}
+                  label="Owner wallet"
+                />
+              }
+            />
+            <Row
+              k="Budget contract"
+              v={
+                <CopyValue
+                  value={CONTRACT_ADDRESS}
+                  display={shortHash(CONTRACT_ADDRESS, 6)}
+                  label="Contract address"
+                />
+              }
+            />
             <Row k="Network" v={<span className="text-primary">{NETWORK}</span>} />
             <Row k="Enforcement" v={<span className="text-success">Smart Contract</span>} />
           </dl>
@@ -111,17 +159,25 @@ function AgentPage() {
             <li key={a.id} className="rise flex gap-3" style={{ animationDelay: `${i * 60}ms` }}>
               <span
                 className={`mt-1 size-2 shrink-0 rounded-full ${
-                  a.tone === "ok" ? "bg-success" : a.tone === "error" ? "bg-destructive" : "bg-warning"
+                  a.tone === "ok"
+                    ? "bg-success"
+                    : a.tone === "error"
+                      ? "bg-destructive"
+                      : "bg-warning"
                 }`}
               />
               <div className="min-w-0">
                 <p className="text-xs font-medium">{a.title}</p>
                 <p className="truncate text-[11px] text-muted-foreground">{a.detail}</p>
               </div>
-              <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">{timeAgo(a.createdAt)}</span>
+              <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+                {timeAgo(a.createdAt)}
+              </span>
             </li>
           ))}
-          {activities.length === 0 && <li className="text-xs text-muted-foreground">No activity yet.</li>}
+          {activities.length === 0 && (
+            <li className="text-xs text-muted-foreground">No activity yet.</li>
+          )}
         </ol>
       </Panel>
     </AppShell>

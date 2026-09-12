@@ -2,9 +2,21 @@
 pragma solidity ^0.8.20;
 
 /**
+ * @dev Interface for standard ERC20 token operations used in USDC settlement.
+ */
+interface IERC20 {
+    function totalSupply() external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
+    function transfer(address recipient, uint256 amount) external returns (bool);
+    function allowance(address owner, address spender) external view returns (uint256);
+    function approve(address spender, uint256 amount) external returns (bool);
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+}
+
+/**
  * @title NexusBudgetManager
  * @dev Enforces hard spending caps, agent authorization, duplicate protection (idempotency),
- *      and cryptographic delivery proofs for autonomous AI agent payments.
+ *      cryptographic delivery proofs, and real ERC20 USDC settlement for autonomous AI agent payments.
  */
 contract NexusBudgetManager {
     // --- Custom Errors ---
@@ -15,12 +27,14 @@ contract NexusBudgetManager {
     error InvalidAmount();
     error InvalidAddress();
     error RequestNotFound(string requestId);
+    error TokenTransferFailed();
 
     // --- State Variables ---
     address public owner;
     address public agent;
     uint256 public totalBudget;
     uint256 public totalSpent;
+    IERC20 public usdcToken;
 
     struct PaymentRecord {
         string requestId;
@@ -28,6 +42,7 @@ contract NexusBudgetManager {
         uint256 amount;
         string serviceId;
         string provider;
+        address recipient;
         bytes32 contentHash;
         uint256 timestamp;
     }
@@ -43,6 +58,7 @@ contract NexusBudgetManager {
     event AgentAuthorized(address indexed previousAgent, address indexed newAgent);
     event BudgetUpdated(uint256 previousBudget, uint256 newBudget);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event USDCTokenUpdated(address indexed previousToken, address indexed newToken);
     event PaymentSettled(
         string indexed requestId,
         address indexed agent,
@@ -67,18 +83,31 @@ contract NexusBudgetManager {
     }
 
     /**
-     * @dev Constructor sets the owner and optionally initial budget and agent.
+     * @dev Constructor sets the owner, initial budget, authorized agent, and USDC token address.
      */
-    constructor(uint256 _initialBudget, address _initialAgent) {
+    constructor(uint256 _initialBudget, address _initialAgent, address _usdcToken) {
         owner = msg.sender;
         totalBudget = _initialBudget;
         if (_initialAgent != address(0)) {
             agent = _initialAgent;
             emit AgentAuthorized(address(0), _initialAgent);
         }
+        if (_usdcToken != address(0)) {
+            usdcToken = IERC20(_usdcToken);
+            emit USDCTokenUpdated(address(0), _usdcToken);
+        }
         if (_initialBudget > 0) {
             emit BudgetUpdated(0, _initialBudget);
         }
+    }
+
+    /**
+     * @dev Owner configures or updates the USDC token contract address.
+     */
+    function setUSDCToken(address _newToken) external onlyOwner {
+        address oldToken = address(usdcToken);
+        usdcToken = IERC20(_newToken);
+        emit USDCTokenUpdated(oldToken, _newToken);
     }
 
     /**
@@ -111,46 +140,54 @@ contract NexusBudgetManager {
     }
 
     /**
-     * @dev Authorized agent settles a payment for a service request.
-     *      Enforces duplicate prevention, hard budget cap, and stores verifiable content hash.
+     * @dev Settles payment with a designated recipient payee address.
+     *      Enforces duplicate prevention, hard budget cap, real ERC20 transferFrom, and stores content hash.
      */
-    function settlePayment(
+    function settlePaymentWithRecipient(
         string calldata requestId,
         string calldata serviceId,
         string calldata provider,
+        address recipient,
         uint256 amount,
         bytes32 contentHash
-    ) external onlyAgentOrOwner returns (bool) {
+    ) public onlyAgentOrOwner returns (bool) {
         if (amount == 0) revert InvalidAmount();
         if (bytes(requestId).length == 0) revert InvalidAmount();
-        
-        // Check duplicate
+
+        // 1. Idempotency / Duplicate Check
         if (processedRequests[requestId]) {
             revert DuplicateRequest(requestId);
         }
 
-        // Check budget
+        // 2. Budget Cap Enforcement
         uint256 remaining = getRemainingBudget();
         if (amount > remaining) {
             emit PaymentBlocked(requestId, msg.sender, amount, remaining);
             revert BudgetExceeded(amount, remaining);
         }
 
-        // Settle payment
+        address payTo = recipient == address(0) ? owner : recipient;
+
+        // 3. Real USDC ERC20 Settlement via transferFrom
+        if (address(usdcToken) != address(0)) {
+            bool success = usdcToken.transferFrom(msg.sender, payTo, amount);
+            if (!success) revert TokenTransferFailed();
+        }
+
+        // 4. Update state
         totalSpent += amount;
         processedRequests[requestId] = true;
 
-        PaymentRecord memory record = PaymentRecord({
+        payments[requestId] = PaymentRecord({
             requestId: requestId,
             agent: msg.sender,
             amount: amount,
             serviceId: serviceId,
             provider: provider,
+            recipient: payTo,
             contentHash: contentHash,
             timestamp: block.timestamp
         });
-
-        payments[requestId] = record;
         requestIds.push(requestId);
 
         emit PaymentSettled(
@@ -165,6 +202,20 @@ contract NexusBudgetManager {
         );
 
         return true;
+    }
+
+    /**
+     * @dev Overloaded settlePayment matching the standard 5-parameter interface.
+     *      Defaults the recipient to the contract owner / provider treasury.
+     */
+    function settlePayment(
+        string calldata requestId,
+        string calldata serviceId,
+        string calldata provider,
+        uint256 amount,
+        bytes32 contentHash
+    ) external onlyAgentOrOwner returns (bool) {
+        return settlePaymentWithRecipient(requestId, serviceId, provider, owner, amount, contentHash);
     }
 
     // --- View Functions ---
@@ -205,7 +256,7 @@ contract NexusBudgetManager {
         if (!processedRequests[requestId]) {
             revert RequestNotFound(requestId);
         }
-        PaymentRecord memory r = payments[requestId];
+        PaymentRecord storage r = payments[requestId];
         return (
             r.requestId,
             r.agent,
@@ -215,6 +266,16 @@ contract NexusBudgetManager {
             r.contentHash,
             r.timestamp
         );
+    }
+
+    /**
+     * @notice Fetch full payment struct.
+     */
+    function getPaymentRecord(string calldata requestId) external view returns (PaymentRecord memory) {
+        if (!processedRequests[requestId]) {
+            revert RequestNotFound(requestId);
+        }
+        return payments[requestId];
     }
 
     /**
