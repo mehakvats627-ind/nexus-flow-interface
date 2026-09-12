@@ -1,76 +1,547 @@
-# Remix of Remix of Remix of exus Dashboard
+# NEXUS
 
-Create a frontend-only dashboard UI for our Web3 + AI project NEXUS.
+### Autonomous AI Payments, With Rules That Cannot Be Ignored.
 
-What we are building
+NEXUS is a **Web3-native payment control layer for AI agents**.
 
-NEXUS allows an AI agent to autonomously purchase services such as translation, while a smart contract enforces a human-set spending budget. The dashboard lets the owner see the agent, budget, spending, successful payments, blocked overspending attempts, and transaction history.
+AI agents are becoming capable of choosing and purchasing services autonomously. But giving an agent a wallet creates a fundamental problem:
 
-Do NOT build any functionality yet. No blockchain, wallet, x402, backend, database, authentication, or real AI. Use static/mock data only.
+> **How do you let an AI spend money without giving it unlimited control over your funds?**
 
-Dashboard aesthetic
+NEXUS solves this by putting the **budget and payment rules on-chain**.
 
-Use the attached reference images for the visual direction:
+A human defines the spending authority.
+An AI agent chooses and requests services.
+The smart contract enforces the limits.
+Every successful payment becomes an auditable on-chain record.
 
-Premium futuristic Web3/AI
+The agent gets autonomy. The human keeps control.
 
-Dark navy/black background
+---
 
-Blue + cyan glow with subtle purple accents
+## ⚡ What NEXUS Does
 
-Glassmorphism
+NEXUS enables an AI agent to autonomously purchase digital services such as:
 
-Cinematic lighting
+* 🌐 Translation
+* 💻 Code generation
+* 🎨 Image generation
+* ⚙️ Compute and other API-based services
 
-Clean premium typography
+Each agent operates through a dedicated wallet with a predefined spending budget.
 
-Subtle futuristic 3D elements
+When the agent attempts a purchase:
 
-Sophisticated, not overly neon or generic crypto-looking
+```text
+AI Agent
+   ↓
+Service Request
+   ↓
+402 Payment Required
+   ↓
+Agent Wallet Signs Payment
+   ↓
+NEXUS Budget Contract
+   ↓
+Budget + Request Validation
+   ↓
+USDC Settlement
+   ↓
+Service Delivery
+   ↓
+Content Verification
+   ↓
+Immutable Receipt
+```
 
-Main dashboard sections
+If the payment violates the rules, the blockchain rejects it.
 
-Create:
+---
 
-Left sidebar: NEXUS, Dashboard, Transactions, Services, AI Agent, Settings
+## 🛡️ The Core Security Model
 
-Top bar: Sepolia Testnet, notification, wallet/user
+NEXUS is built around one principle:
 
-Hero: “Give AI Real Purchasing Power.” with futuristic AI agent visual and Run Demo button
+### **The AI should never be the authority.**
 
-Budget Overview: $10 budget, $3 spent, $7 remaining
+The AI can **request** a payment, but it cannot override the rules governing that payment.
 
-AI Agent Status: Active, authorized, budget enforced
+The smart contract enforces:
 
-Quick Actions: Translation ($1), Code Generation ($2), Image Generation ($2)
+| Rule                          | Enforcement  |
+| ----------------------------- | ------------ |
+| Maximum spending budget       | On-chain     |
+| Authorized agent              | On-chain     |
+| Duplicate request protection  | On-chain     |
+| Payment amount                | On-chain     |
+| Payment history               | On-chain     |
+| Service delivery verification | Content hash |
+| Audit trail                   | Blockchain   |
 
-Key metrics: successful purchases, blocked attempts, services used, response time
+This means even if an agent makes a bad decision, exceeds its budget, or attempts to replay an old request, the enforcement layer remains outside the AI's control.
 
-Transaction History showing successful, blocked, and duplicate transactions
+---
 
-Recent Activity timeline showing payments and a blocked overspend attempt
+## 🤖 Agentic Architecture
 
-Futuristic footer/banner
+NEXUS separates **decision-making** from **authorization**.
 
-Make it feel like a real premium startup product, not a hackathon admin panel. Focus entirely on visual quality, layout, spacing, typography and polish, while keeping the code clean and ready for functionality to be connected later.
+### AI Layer
 
-This project was built with [Lovable](https://lovable.dev).
+The AI agent is responsible for:
 
-## Build with Lovable
+* Understanding the user's task
+* Selecting an appropriate service
+* Comparing available services
+* Determining whether a purchase is necessary
+* Initiating the payment flow
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/dcff80d6-1ed5-482e-adf4-d27fba82b42e).
+### Blockchain Layer
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+The smart contract is responsible for:
 
-## Development
+* Who can spend
+* How much can be spent
+* Whether the request has already been processed
+* Recording successful payments
+* Maintaining the audit trail
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+This separation prevents the AI from becoming its own security boundary.
 
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+---
+
+## 💳 x402 Payment Flow
+
+NEXUS uses the **x402 payment protocol** to enable machine-to-machine payments over HTTP.
+
+A service can respond with:
+
+```text
+402 Payment Required
+```
+
+The agent then:
+
+1. Reads the payment requirements
+2. Evaluates the requested service
+3. Signs the payment using its dedicated wallet
+4. Submits the payment
+5. Receives the service
+6. Verifies the delivered content
+7. Records the resulting receipt
+
+This allows AI agents to interact with paid APIs without requiring a human to manually approve every transaction.
+
+---
+
+## 🔐 Budget Enforcement
+
+Suppose the agent has:
+
+```text
+Budget:       $10 USDC
+Spent:         $7 USDC
+Remaining:     $3 USDC
+```
+
+The agent attempts to purchase a service costing `$5`.
+
+The AI may request it.
+
+The application may attempt it.
+
+But the smart contract says:
+
+```text
+Requested: $5
+Remaining: $3
+
+❌ Budget Exceeded
+Transaction Reverted
+Funds Protected
+```
+
+The AI cannot negotiate with the contract.
+
+Because, thankfully, Solidity does not care how persuasive your chatbot is.
+
+---
+
+## 🔁 Replay Protection
+
+Every payment request receives a unique `requestId`.
+
+Once a request has been settled, it cannot be processed again.
+
+```text
+Request ID: req-001
+
+First attempt
+    ↓
+✅ Payment settled
+
+Second attempt
+    ↓
+❌ Duplicate request rejected
+```
+
+This prevents an agent or malicious client from accidentally or intentionally charging the same request twice.
+
+---
+
+## 🧾 Verifiable Receipts
+
+Every successful service purchase produces a receipt containing information such as:
+
+* Request ID
+* Agent address
+* Service
+* Provider
+* Amount
+* Transaction hash
+* Timestamp
+* Content hash
+* Payment status
+
+The delivered service output is hashed and the hash is associated with the payment record.
+
+This creates a verifiable connection between:
+
+**Payment → Service → Delivered Result**
+
+---
+
+## 🖥️ NEXUS Dashboard
+
+The dashboard provides a real-time control surface for the autonomous agent.
+
+### Dashboard
+
+Monitor:
+
+* Total budget
+* Amount spent
+* Remaining budget
+* Agent status
+* Recent payments
+* Payment activity
+* Security events
+
+### AI Agent
+
+View:
+
+* Agent identity
+* Authorized wallet
+* Spending authority
+* Network
+* Budget utilization
+* Agent activity
+
+### Services
+
+Explore available services and initiate purchases through the NEXUS payment flow.
+
+### Transactions
+
+Inspect successful, blocked, and duplicate payment attempts.
+
+### Receipts
+
+Review the complete payment and delivery record for each successful request.
+
+---
+
+## 🏗️ Architecture
+
+```text
+                    ┌─────────────────────┐
+                    │      Human User     │
+                    │                     │
+                    │  Sets Budget/Rules  │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │      AI Agent       │
+                    │                     │
+                    │ Selects Services     │
+                    │ Initiates Purchases  │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │       x402          │
+                    │  Payment Protocol   │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+              ┌────────────────────────────────┐
+              │      NEXUS Smart Contract      │
+              │                                │
+              │  ✓ Authorized Agent            │
+              │  ✓ Budget Enforcement          │
+              │  ✓ Replay Protection           │
+              │  ✓ Payment Records             │
+              └───────────────┬────────────────┘
+                              │
+                              ▼
+                    ┌─────────────────────┐
+                    │     USDC Payment    │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │    Service Provider │
+                    │                     │
+                    │  Delivers Result    │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │ Content Verification│
+                    │    + Receipt        │
+                    └─────────────────────┘
+```
+
+---
+
+## 🧰 Tech Stack
+
+**Frontend**
+
+* React
+* TypeScript
+* TanStack Router
+* TanStack Start
+* Tailwind CSS
+* Lucide Icons
+
+**Blockchain**
+
+* Solidity
+* Ethereum
+* Sepolia Testnet
+* USDC
+* Hardhat
+* ethers.js
+
+**Payments**
+
+* x402 protocol
+* HTTP 402 payment flow
+
+**Security**
+
+* Smart-contract budget enforcement
+* Authorized-agent access control
+* Request replay protection
+* Content hashing
+* On-chain payment records
+
+---
+
+## 📁 Project Structure
+
+```text
+nexus-flow-interface/
+│
+├── contracts/
+│   └── NexusBudgetManager.sol
+│
+├── scripts/
+│   ├── compile-contracts.cjs
+│   └── deploy.cjs
+│
+├── src/
+│   ├── components/
+│   │   └── nexus/
+│   │
+│   ├── lib/
+│   │   └── nexus/
+│   │       ├── blockchain/
+│   │       ├── services/
+│   │       └── x402/
+│   │
+│   └── routes/
+│       ├── index.tsx
+│       ├── agent.tsx
+│       ├── services.tsx
+│       ├── transactions.tsx
+│       └── settings.tsx
+│
+├── test/
+├── package.json
+└── vite.config.ts
+```
+
+---
+
+## 🚀 Getting Started
+
+### Requirements
+
+* Node.js
+* npm
+* Git
+
+### Install
+
+```bash
+git clone https://github.com/mehakvats627-ind/nexus-flow-interface.git
+
+cd nexus-flow-interface
+
+npm install
+```
+
+### Start Development Server
+
+```bash
 npm run dev
 ```
+
+Then open:
+
+```text
+http://localhost:5173
+```
+
+### Build
+
+```bash
+npm run build
+```
+
+---
+
+## 🔑 Environment Variables
+
+Create a `.env` file using `.env.example`.
+
+For blockchain functionality, configure the appropriate Sepolia RPC endpoint, wallet credentials, contract address, and agent configuration.
+
+**Never commit private keys or production credentials to Git.**
+
+---
+
+## 🧪 Smart Contract
+
+The core contract is:
+
+```text
+NexusBudgetManager.sol
+```
+
+Its responsibilities include:
+
+* Agent authorization
+* Budget configuration
+* Payment settlement
+* Budget validation
+* Duplicate request prevention
+* Payment recording
+* Ownership management
+
+The contract is intentionally designed so that **AI decisions remain separate from financial enforcement**.
+
+---
+
+## 🎬 Hackathon Demo
+
+The ideal NEXUS demonstration follows this sequence:
+
+### 1. Give the agent a budget
+
+```text
+Budget = $10 USDC
+Spent  = $0
+```
+
+### 2. Ask the agent to complete a task
+
+The AI determines which service is required.
+
+### 3. Service requests payment
+
+The provider responds with:
+
+```text
+402 Payment Required
+```
+
+### 4. Agent pays autonomously
+
+The dedicated agent wallet signs the payment.
+
+### 5. Smart contract validates it
+
+The contract checks:
+
+```text
+Authorized?
+     ✓
+
+Within budget?
+     ✓
+
+Already processed?
+     ✗
+```
+
+### 6. Service is delivered
+
+The provider returns the requested result.
+
+### 7. NEXUS verifies the result
+
+The content hash is calculated and associated with the payment.
+
+### 8. Receipt is generated
+
+The dashboard displays the complete transaction.
+
+### 9. Attack the system
+
+Attempt a purchase above the remaining budget.
+
+```text
+❌ Budget Exceeded
+```
+
+Then replay an already-settled request.
+
+```text
+❌ Duplicate Request
+```
+
+The result demonstrates the core proposition:
+
+> **The agent is autonomous. The money is not.**
+
+---
+
+## 🎯 Why NEXUS?
+
+Most AI agents are designed around **capability**.
+
+NEXUS focuses on **controlled capability**.
+
+Giving an AI a wallet is easy.
+
+Giving it a wallet that can autonomously transact while remaining constrained by deterministic, auditable rules is the real challenge.
+
+NEXUS creates that missing control layer.
+
+### Autonomous intelligence on top.
+
+### Deterministic financial enforcement underneath.
+
+---
+
+## 📜 License
+
+This project is developed as a hackathon prototype.
+
+See the repository for the current licensing and usage terms.
+
