@@ -41,7 +41,7 @@ export type Transaction = {
   contentHash: string | null;
   receiptId: string | null;
   createdAt: number;
-  note?: string;
+  note?: string | undefined;
 };
 
 export type Activity = {
@@ -139,17 +139,25 @@ const idleFlow = (): FlowState => ({
 });
 
 let counter = 0;
+
+/** Deterministic PRNG so SSR and client hydration produce identical values. */
+let rngState = 0x9e3779b9;
+const rand = () => {
+  rngState = (rngState * 1664525 + 1013904223) >>> 0;
+  return rngState / 0x100000000;
+};
+
 const hex = (len: number) =>
   "0x" +
   Array.from({ length: len }, () =>
-    "0123456789abcdef"[Math.floor(Math.random() * 16)],
+    "0123456789abcdef"[Math.floor(rand() * 16)],
   ).join("");
 
 export const newRequestId = () => `req-${String(++counter).padStart(3, "0")}`;
 export const newTxHash = () => hex(64);
 export const newContentHash = () => hex(64);
 export const newReceiptId = () =>
-  `rcpt-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  `rcpt-${rand().toString(36).slice(2, 8).toUpperCase()}`;
 
 export const shortHash = (value: string | null | undefined, size = 4) => {
   if (!value) return "—";
@@ -330,7 +338,7 @@ export const requestIdExists = (id: string) =>
 function pushActivity(a: Omit<Activity, "id" | "createdAt">) {
   return {
     ...a,
-    id: `act-${Math.random().toString(36).slice(2, 9)}`,
+    id: `act-${rand().toString(36).slice(2, 9)}`,
     createdAt: Date.now(),
   } as Activity;
 }
