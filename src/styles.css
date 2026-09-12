@@ -91,3 +91,32 @@
 
 @keyframes drift { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 @media (prefers-reduced-motion: no-preference) { .agent-drift { animation: drift 5s ease-in-out infinite; } }
+@keyframes float-slow { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-14px) rotate(2deg); } }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes glow-pulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+@keyframes sweep { 0% { transform: translateX(-120%); } 100% { transform: translateX(220%); } }
+@keyframes ring-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .float-slow { animation: float-slow 7s ease-in-out infinite; }
+  .rise { animation: rise 0.6s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+  .glow-pulse { animation: glow-pulse 3s ease-in-out infinite; }
+  .ring-spin { animation: ring-spin 18s linear infinite; }
+  .sweep::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 40%, color-mix(in oklab, var(--primary) 16%, transparent) 50%, transparent 60%);
+    animation: sweep 3.4s ease-in-out infinite;
+    pointer-events: none;
+  }
+}
+
+@utility lift {
+  transition: transform 320ms cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 320ms ease, border-color 320ms ease;
+  &:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in oklab, var(--primary) 45%, transparent);
+    box-shadow: 0 26px 70px color-mix(in oklab, var(--background) 70%, transparent), 0 0 34px color-mix(in oklab, var(--primary) 16%, transparent);
+  }
+}
