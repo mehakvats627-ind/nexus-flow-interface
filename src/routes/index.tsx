@@ -6,6 +6,9 @@ import {
   WalletCards, Zap,
 } from "lucide-react";
 import agentHero from "@/assets/nexus-agent-hero.jpg";
+import swirl from "@/assets/nexus-swirl.jpg";
+import cube from "@/assets/nexus-cube.png";
+import ridge from "@/assets/nexus-ridge.jpg";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -84,8 +87,14 @@ function BrandMark({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <section className={`glass-panel rounded-xl ${className}`}>{children}</section>;
+function Panel({
+  children, className = "", delay = 0,
+}: { children: React.ReactNode; className?: string; delay?: number }) {
+  return (
+    <section className={`glass-panel lift rise rounded-xl ${className}`} style={{ animationDelay: `${delay}ms` }}>
+      {children}
+    </section>
+  );
 }
 
 function PanelTitle({
