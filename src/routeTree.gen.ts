@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgentRouteImport } from './routes/agent'
+import { Route as SepoliaRouteImport } from './routes/sepolia'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TransactionsRouteImport } from './routes/transactions'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const AgentRoute = AgentRouteImport.update({
   id: '/agent',
   path: '/agent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SepoliaRoute = SepoliaRouteImport.update({
+  id: '/sepolia',
+  path: '/sepolia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesRoute = ServicesRouteImport.update({
@@ -44,6 +50,7 @@ const TransactionsRoute = TransactionsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agent': typeof AgentRoute
+  '/sepolia': typeof SepoliaRoute
   '/services': typeof ServicesRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agent': typeof AgentRoute
+  '/sepolia': typeof SepoliaRoute
   '/services': typeof ServicesRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
@@ -59,21 +67,31 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/agent': typeof AgentRoute
+  '/sepolia': typeof SepoliaRoute
   '/services': typeof ServicesRoute
   '/settings': typeof SettingsRoute
   '/transactions': typeof TransactionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/agent' | '/services' | '/settings' | '/transactions'
+  fullPaths:
+    '/' | '/agent' | '/sepolia' | '/services' | '/settings' | '/transactions'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/agent' | '/services' | '/settings' | '/transactions'
-  id: '__root__' | '/' | '/agent' | '/services' | '/settings' | '/transactions'
+  to: '/' | '/agent' | '/sepolia' | '/services' | '/settings' | '/transactions'
+  id:
+    | '__root__'
+    | '/'
+    | '/agent'
+    | '/sepolia'
+    | '/services'
+    | '/settings'
+    | '/transactions'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgentRoute: typeof AgentRoute
+  SepoliaRoute: typeof SepoliaRoute
   ServicesRoute: typeof ServicesRoute
   SettingsRoute: typeof SettingsRoute
   TransactionsRoute: typeof TransactionsRoute
@@ -93,6 +111,13 @@ declare module '@tanstack/react-router' {
       path: '/agent'
       fullPath: '/agent'
       preLoaderRoute: typeof AgentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sepolia': {
+      id: '/sepolia'
+      path: '/sepolia'
+      fullPath: '/sepolia'
+      preLoaderRoute: typeof SepoliaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services': {
@@ -122,6 +147,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgentRoute: AgentRoute,
+  SepoliaRoute: SepoliaRoute,
   ServicesRoute: ServicesRoute,
   SettingsRoute: SettingsRoute,
   TransactionsRoute: TransactionsRoute,

@@ -7,7 +7,15 @@
  */
 
 import { blockchainEngine } from "./blockchain/client";
-import { AGENT_ADDRESS, CONTRACT_ADDRESS, NETWORK, OWNER_ADDRESS } from "./blockchain/contracts";
+import {
+  AGENT_ADDRESS,
+  CONTRACT_ADDRESS,
+  getExplorerAddressUrl,
+  getExplorerTxUrl,
+  NETWORK,
+  OWNER_ADDRESS,
+  USDC_ADDRESS,
+} from "./blockchain/contracts";
 import { computeContentHash } from "./blockchain/crypto";
 import {
   generateServiceOutput,
@@ -22,7 +30,15 @@ import { executeX402PaymentFlow, X402Receipt } from "./x402/client";
 export type { ServiceId };
 export type Service = ServiceDefinition;
 export { SERVICES, getServices, getService };
-export { AGENT_ADDRESS, OWNER_ADDRESS, NETWORK, CONTRACT_ADDRESS };
+export {
+  AGENT_ADDRESS,
+  OWNER_ADDRESS,
+  NETWORK,
+  CONTRACT_ADDRESS,
+  USDC_ADDRESS,
+  getExplorerAddressUrl,
+  getExplorerTxUrl,
+};
 
 export type TxStatus = "Success" | "Blocked" | "Duplicate";
 
@@ -116,8 +132,7 @@ const idleFlow = (): FlowState => ({
 let counter = 0;
 
 export const newRequestId = () => `req-${String(++counter).padStart(3, "0")}`;
-export const newTxHash = () =>
-  `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
+export const newTxHash = (seedStr = "nexus-tx") => computeContentHash(seedStr);
 export const newContentHash = (content = "nexus") => computeContentHash(content);
 export const newReceiptId = () => `rcpt-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
@@ -407,6 +422,41 @@ export async function processPayment(): Promise<FlowState> {
       });
       return state.flow;
     }
+
+    // Generic failure
+    const budget = getBudget();
+    const tx: Transaction = {
+      requestId,
+      serviceId: svc.id,
+      service: svc.name,
+      provider: svc.provider,
+      amount: svc.price,
+      status: "Blocked",
+      txHash: null,
+      contentHash: null,
+      receiptId: null,
+      createdAt: Date.now(),
+      note: result.error || "Payment failed on Sepolia blockchain.",
+    };
+
+    commit({
+      transactions: [...state.transactions, tx],
+      activities: [
+        ...state.activities,
+        pushActivity({
+          title: "Payment settlement failed",
+          detail: `${result.error || "Failed on-chain execution"} · ${requestId}`,
+          tone: "error",
+        }),
+      ],
+      flow: {
+        ...state.flow,
+        stage: "blocked",
+        remainingAtRequest: budget.remaining,
+        error: result.error || "Blockchain transaction failed",
+      },
+    });
+    return state.flow;
   }
 
   // Success path

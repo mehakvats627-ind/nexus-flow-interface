@@ -208,113 +208,165 @@ export class NexusBlockchainEngine {
       };
     }
 
-    // Rule 3: Execute real on-chain transaction
-    let txHash: string | null = null;
-    let blockNumber: number | undefined;
-
-    try {
-      if (this.contract && this.signer) {
-        const contractWithSigner = this.contract.connect(this.signer);
-
-        // Check USDC allowance & approve if necessary
-        if (this.usdcContract) {
-          try {
-            const signerAddress = await this.signer.getAddress();
-            const allowance: bigint = await this.usdcContract.allowance(
-              signerAddress,
-              CONTRACT_ADDRESS,
-            );
-            if (allowance < amountInUnits) {
-              const usdcWithSigner = this.usdcContract.connect(this.signer);
-              const approveTx = await usdcWithSigner.approve(CONTRACT_ADDRESS, ethers.MaxUint256);
-              await approveTx.wait(1);
-            }
-          } catch (allowanceErr) {
-            console.warn("[NEXUS USDC Allowance]", allowanceErr);
-          }
-        }
-
-        // Submit settlePayment transaction to Sepolia contract
-        try {
-          const tx = await contractWithSigner.settlePayment(
-            requestId,
+    // Settle via server API endpoint if running in client/browser
+    if (typeof window !== "undefined") {
+      try {
+        const response = await fetch("/api/agent/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
             serviceId,
-            provider,
-            amountInUnits,
-            contentHash,
-          );
-          const receipt = await tx.wait(1);
-          txHash = receipt.hash;
-          blockNumber = receipt.blockNumber;
-        } catch (contractErr: unknown) {
-          // Parse contract custom revert errors
-          const errorObj = contractErr as { reason?: string; message?: string } | null;
-          const errorMsg = errorObj?.reason || errorObj?.message || String(contractErr);
+            requestId,
+            prompt: deliveredContent,
+          }),
+        });
 
-          if (errorMsg.includes("DuplicateRequest") || errorMsg.includes("duplicate")) {
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.txHash) {
+            this.totalSpent += amount;
+            this.processedMap.set(requestId, true);
+            const record: OnChainPaymentRecord = {
+              requestId,
+              agent: caller,
+              amount,
+              serviceId,
+              provider,
+              contentHash,
+              timestamp: data.deliveredAt || Date.now(),
+              txHash: data.txHash,
+              blockNumber: data.blockNumber,
+            };
+            this.paymentRecords.set(requestId, record);
+            this.requestIds.push(requestId);
+
+            return {
+              success: true,
+              status: "Success",
+              txHash: data.txHash,
+              contentHash: data.contentHash || contentHash,
+              blockNumber: data.blockNumber,
+              record,
+            };
+          } else {
             return {
               success: false,
-              status: "Duplicate",
+              status:
+                data.stage === "blocked"
+                  ? "Blocked"
+                  : data.stage === "duplicate"
+                    ? "Duplicate"
+                    : "Blocked",
               txHash: null,
               contentHash: null,
-              error: `DuplicateRequest("${requestId}"): Contract reverted duplicate request.`,
+              error: data.error || "On-chain settlement rejected by smart contract.",
             };
           }
-
-          if (errorMsg.includes("BudgetExceeded") || errorMsg.includes("exceeds")) {
-            return {
-              success: false,
-              status: "Blocked",
-              txHash: null,
-              contentHash: null,
-              error: `BudgetExceeded: Smart contract rejected payment exceeding budget cap.`,
-            };
-          }
-
-          // If transaction failed due to insufficient funds/revert on testnet, record verified on-chain style proof
-          console.warn("[NEXUS Contract Interaction Notice]:", errorMsg);
         }
+      } catch (apiErr) {
+        console.warn("[NEXUS Agent API Notice]:", apiErr);
       }
-    } catch (err) {
-      console.warn("[NEXUS Blockchain Submission Notice]:", err);
     }
 
-    // If live RPC submission was bypassed or simulated due to local test environment,
-    // generate deterministic verifiable transaction hash
-    if (!txHash) {
-      const txPayload = ethers.solidityPacked(
-        ["string", "string", "string", "uint256", "bytes32", "address", "uint256"],
-        [requestId, serviceId, provider, amountInUnits, contentHash, caller, BigInt(Date.now())],
-      );
-      txHash = ethers.keccak256(txPayload);
+    // Direct RPC contract fallback
+    if (this.contract && this.signer) {
+      try {
+        const contractWithSigner = this.contract.connect(this.signer) as ethers.Contract;
+        if (this.usdcContract) {
+          const signerAddress = await this.signer.getAddress();
+          const allowance: bigint = await this.usdcContract.allowance(
+            signerAddress,
+            CONTRACT_ADDRESS,
+          );
+          if (allowance < amountInUnits) {
+            const usdcWithSigner = this.usdcContract.connect(this.signer) as ethers.Contract;
+            const approveTx = await usdcWithSigner.approve(CONTRACT_ADDRESS, ethers.MaxUint256);
+            await approveTx.wait(1);
+          }
+        }
+
+        const tx = await contractWithSigner.settlePayment(
+          requestId,
+          serviceId,
+          provider,
+          amountInUnits,
+          contentHash,
+        );
+        const receipt = await tx.wait(1);
+        txHash = receipt.hash;
+        blockNumber = receipt.blockNumber;
+
+        this.totalSpent += amount;
+        this.processedMap.set(requestId, true);
+
+        const record: OnChainPaymentRecord = {
+          requestId,
+          agent: caller,
+          amount,
+          serviceId,
+          provider,
+          contentHash,
+          timestamp: Date.now(),
+          txHash,
+          blockNumber,
+        };
+
+        this.paymentRecords.set(requestId, record);
+        this.requestIds.push(requestId);
+
+        return {
+          success: true,
+          status: "Success",
+          txHash,
+          contentHash,
+          blockNumber,
+          record,
+        };
+      } catch (contractErr: unknown) {
+        const errorObj = contractErr as { reason?: string; message?: string } | null;
+        const errorMsg = errorObj?.reason || errorObj?.message || String(contractErr);
+
+        if (errorMsg.includes("DuplicateRequest") || errorMsg.includes("duplicate")) {
+          return {
+            success: false,
+            status: "Duplicate",
+            txHash: null,
+            contentHash: null,
+            error: `DuplicateRequest("${requestId}"): Contract reverted duplicate request.`,
+          };
+        }
+
+        if (
+          errorMsg.includes("BudgetExceeded") ||
+          errorMsg.includes("budget") ||
+          errorMsg.includes("exceeds")
+        ) {
+          return {
+            success: false,
+            status: "Blocked",
+            txHash: null,
+            contentHash: null,
+            error: `BudgetExceeded: Smart contract rejected payment exceeding budget cap.`,
+          };
+        }
+
+        return {
+          success: false,
+          status: "Blocked",
+          txHash: null,
+          contentHash: null,
+          error: `Blockchain settlement failed: ${errorMsg}`,
+        };
+      }
     }
 
-    // Update local synced state
-    this.totalSpent += amount;
-    this.processedMap.set(requestId, true);
-
-    const record: OnChainPaymentRecord = {
-      requestId,
-      agent: caller,
-      amount,
-      serviceId,
-      provider,
-      contentHash,
-      timestamp: Date.now(),
-      txHash,
-      blockNumber,
-    };
-
-    this.paymentRecords.set(requestId, record);
-    this.requestIds.push(requestId);
-
+    // If transaction could not be executed on blockchain, return failure (NO fake success fallback)
     return {
-      success: true,
-      status: "Success",
-      txHash,
-      contentHash,
-      blockNumber,
-      record,
+      success: false,
+      status: "Blocked",
+      txHash: null,
+      contentHash: null,
+      error: "Blockchain transaction failed: No active signer connected.",
     };
   }
 

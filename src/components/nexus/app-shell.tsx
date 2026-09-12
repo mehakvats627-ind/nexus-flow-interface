@@ -4,6 +4,7 @@ import {
   Bot,
   Box,
   History,
+  Layers,
   LayoutDashboard,
   Menu,
   PanelsTopLeft,
@@ -22,6 +23,7 @@ const nav = [
   { label: "Transactions", to: "/transactions", icon: History },
   { label: "Services", to: "/services", icon: PanelsTopLeft },
   { label: "AI Agent", to: "/agent", icon: Bot },
+  { label: "Sepolia", to: "/sepolia", icon: Layers },
   { label: "Settings", to: "/settings", icon: Settings },
 ] as const;
 
