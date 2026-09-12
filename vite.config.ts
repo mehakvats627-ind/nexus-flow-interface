@@ -1,7 +1,13 @@
-import { defineConfig } from "@tanstack/start-config";
+import { defineConfig } from "vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
-  server: {
-    entry: "server",
+  resolve: {
+    tsconfigPaths: true,
   },
+  plugins: [
+    tanstackStart(),
+    react(),
+  ],
 });
